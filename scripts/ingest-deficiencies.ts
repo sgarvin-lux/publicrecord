@@ -95,7 +95,13 @@ export async function main() {
   );
 
   if (transformed.length === 0) {
-    console.error("No records to upsert — exiting with failure");
+    if (rawRecords.length === 0) {
+      console.error("CMS returned zero records — possible API failure");
+    } else {
+      console.error(
+        `All ${rawRecords.length} records skipped — ${unmatchedCount} unmatched providers, check that providers have been ingested first`,
+      );
+    }
     process.exit(1);
   }
 
@@ -118,7 +124,9 @@ export async function main() {
   console.log(`Records upserted:  ${totalUpserted}`);
 
   if (totalUpserted === 0) {
-    console.error("Zero records upserted — exiting with failure");
+    console.error(
+      "Zero records upserted despite transforming records — possible database issue",
+    );
     process.exit(1);
   }
 
