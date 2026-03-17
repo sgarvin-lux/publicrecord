@@ -26,21 +26,22 @@ Each provider type has its own CMS page. Download the data zip from each:
 
 | Provider Type | Form | URL |
 |---|---|---|
-| Skilled Nursing Facility (SNF) | CMS-2540-10 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/skilled-nursing-facility-2540-2010-form |
+| Skilled Nursing Facility (SNF) | CMS-2540-10 / CMS-2540-24 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/skilled-nursing-facility-2540-2010-form |
 | Home Health Agency (HHA) | CMS-1728-20 | https://www.cms.gov/data-research/statistics-trends-reports/cost-reports/home-health-agency-1728-2020-form |
 | Hospice | CMS-1984-14 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/hospice-1984-2014-form |
 
 **What to download:**
-- SNF and HHA pages: look for "SNF 10 Data files zip" / "HHA 20 Data files zip" — these are annual releases (one year per download).
-- Hospice page: look for "Hospice 14 Data files" — this is a single download covering all years (FY2015–present).
+- SNF page: look for "SNF 10 Data files zip" or "SNF 24 Data files zip" — annual releases, one year per download. Most providers still file on the older CMS-2540-10 form (files named `SNF10_*`); the newer CMS-2540-24 form (files named `SNF24_*`) is also in use. Both are supported — the scripts try the new-form coordinates first and fall back to the old.
+- HHA page: look for "HHA 20 Data files zip" — annual releases. **Only download files from this page (CMS-1728-20 form, named `HHA20_*`).** The older CMS-1728-94 form files (named `HHA_*`) have an incompatible format and are not supported.
+- Hospice page: look for "Hospice 14 Data files" — a single download covering all years (FY2015–present).
 
 Extract each zip to its own directory under `~/Downloads/hcris/`. Example structure:
 
 ```
 ~/Downloads/hcris/
-  SNF24FY2025/
-    SNF24_2025_rpt.csv
-    SNF24_2025_nmrc.csv
+  SNF10FY2025/
+    SNF10_2025_rpt.csv
+    SNF10_2025_nmrc.csv
     ...
   HHA20FY2025/
     HHA20_2025_rpt.csv
@@ -77,11 +78,16 @@ Each directory should have at least one `*_rpt.csv` and matching `*_nmrc.csv`.
 
 The scripts extract specific worksheet coordinates from the NMRC files. CMS sometimes changes the exact codes between form versions. Verify with:
 
-**SNF — check medicare_payments coordinate (E00A18A/01400/00100):**
+**SNF — check medicare_payments coordinate:**
+
+The coordinate depends on the form version. Check which you have:
 ```bash
-grep -m5 ',E00A18A,01400,00100,' ~/Downloads/hcris/SNF24FY2025/SNF24_2025_nmrc.csv
+# New form (CMS-2540-24, files named SNF24_*):
+grep -m5 ',E00A18A,01400,00100,' ~/Downloads/hcris/SNF10FY2025/SNF10_2025_nmrc.csv
+# Old form (CMS-2540-10, files named SNF10_*):
+grep -m5 ',E00A181,00300,00100,' ~/Downloads/hcris/SNF10FY2025/SNF10_2025_nmrc.csv
 ```
-Expected: several rows with large dollar amounts ($100K–$10M range per provider).
+Expected: several rows with large dollar amounts ($100K–$10M range per provider). The scripts try both automatically.
 
 **HHA — check medicare_payments coordinate (B000000/10000/01000):**
 ```bash
@@ -100,7 +106,7 @@ If these return no results, the worksheet codes have changed. Check the CMS data
 ## Step 4: Set environment variables
 
 ```bash
-export $(grep -v '^#' .env.local | xargs)
+set -a && source .env.local && set +a
 ```
 
 ---
@@ -160,7 +166,7 @@ The scripts are **idempotent** — re-running is safe. `payment_history` upserts
 
 ## Quarterly checklist
 
-- [ ] Downloaded SNF data zip and extracted to `~/Downloads/hcris/SNF24FY<YEAR>/`
+- [ ] Downloaded SNF data zip (SNF10 or SNF24) and extracted to `~/Downloads/hcris/SNF10FY<YEAR>/` (or `SNF24FY<YEAR>/`)
 - [ ] Downloaded HHA data zip and extracted to `~/Downloads/hcris/HHA20FY<YEAR>/`
 - [ ] Downloaded Hospice data zip and extracted to `~/Downloads/hcris/HOSPC14-ALL-YEARS/` (replace if newer all-years bundle available)
 - [ ] Ran `parse-hcris-snf.ts` — reviewed summary, checked providers missing count
