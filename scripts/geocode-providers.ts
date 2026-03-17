@@ -44,11 +44,13 @@ export async function main() {
   let totalGeocoded = 0;
   let totalFailed = 0;
   let totalSkipped = 0;
+  const processedIds = new Set<string>();
 
   // Process in batches until no more providers need geocoding
   let hasMore = true;
   while (hasMore) {
-    const providers = await fetchProvidersNeedingGeocode(BATCH_SIZE);
+    const allProviders = await fetchProvidersNeedingGeocode(BATCH_SIZE);
+    const providers = allProviders.filter((p) => !processedIds.has(p.id));
 
     if (providers.length === 0) {
       hasMore = false;
@@ -58,6 +60,7 @@ export async function main() {
     console.log(`Processing batch of ${providers.length} providers...`);
 
     for (const provider of providers) {
+      processedIds.add(provider.id);
       try {
         const result = await geocodeAddress(provider, accessToken);
 
