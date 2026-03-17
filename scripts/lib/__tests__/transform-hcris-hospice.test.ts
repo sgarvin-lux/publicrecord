@@ -11,8 +11,8 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "300", WKSHT_CD: "E",  LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "800000" },
-  { RPT_REC_NUM: "300", WKSHT_CD: "S2", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "45000" },
+  { RPT_REC_NUM: "300", WKSHT_CD: "B000000", LINE_NUM: "10100", CLMN_NUM: "03A00", ITM_VAL_NUM: "800000" },
+  { RPT_REC_NUM: "300", WKSHT_CD: "S100000", LINE_NUM: "03100", CLMN_NUM: "00100", ITM_VAL_NUM: "45000" },
 ];
 
 describe("transformHospice", () => {

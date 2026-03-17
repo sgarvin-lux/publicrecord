@@ -3,15 +3,14 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
 /**
  * Worksheet coordinates for SNF (CMS-2540-10).
  *
- * IMPORTANT: Verify these values against actual HCRIS files before first run.
- * CMS form instructions may use different notation than raw file values
- * (e.g. form says "E" but file contains "E00001"). See runbook for verification steps.
+ * IMPORTANT: Verify these coordinates against actual data before first run.
+ * Use: grep ',E00A18A,01400,00100,' your_nmrc_file.csv | head -5
+ * to confirm the value matches expected Medicare Part A net reimbursement.
  */
 const COORDS = {
-  medicare_payments: { wksht: "E", line: "1", col: "1" },
-  total_charges:     { wksht: "C", line: "1", col: "8" },
-  medicare_days:     { wksht: "S3", line: "1", col: "6" },
-  total_days:        { wksht: "S3", line: "1", col: "8" },
+  medicare_payments: { wksht: "E00A18A", line: "01400", col: "00100" },
+  total_charges:     { wksht: "C000000", line: "02500", col: "00100" },
+  total_days:        { wksht: "S300001", line: "00100", col: "00200" },
 } as const;
 
 /**

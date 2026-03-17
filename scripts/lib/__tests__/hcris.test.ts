@@ -4,7 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import {
   parseFiscalYear,
-  findFileBySuffix,
+  findRptNmrcPairs,
   selectBestReports,
   groupNmrcByRptRecNum,
   lookupValue,
@@ -36,9 +36,9 @@ describe("parseFiscalYear", () => {
   });
 });
 
-// ─── findFileBySuffix ──────────────────────────────────────────────────────
+// ─── findRptNmrcPairs ─────────────────────────────────────────────────────
 
-describe("findFileBySuffix", () => {
+describe("findRptNmrcPairs", () => {
   let tempDir: string;
 
   beforeEach(() => {
@@ -49,18 +49,30 @@ describe("findFileBySuffix", () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("returns the full path of the matching file (case-insensitive suffix)", () => {
-    fs.writeFileSync(path.join(tempDir, "SNF_2023_RPT_ABC.csv"), "");
-    fs.writeFileSync(path.join(tempDir, "SNF_2023_NMRC_DEF.csv"), "");
-    const result = findFileBySuffix(tempDir, "_rpt_");
-    expect(result).toBe(path.join(tempDir, "SNF_2023_RPT_ABC.csv"));
+  it("returns matched rpt/nmrc pairs sorted by filename", () => {
+    fs.writeFileSync(path.join(tempDir, "SNF24_2024_rpt.csv"), "");
+    fs.writeFileSync(path.join(tempDir, "SNF24_2024_nmrc.csv"), "");
+    fs.writeFileSync(path.join(tempDir, "SNF24_2025_rpt.csv"), "");
+    fs.writeFileSync(path.join(tempDir, "SNF24_2025_nmrc.csv"), "");
+    const pairs = findRptNmrcPairs(tempDir);
+    expect(pairs).toHaveLength(2);
+    expect(pairs[0].rpt).toContain("2024_rpt.csv");
+    expect(pairs[0].nmrc).toContain("2024_nmrc.csv");
+    expect(pairs[1].rpt).toContain("2025_rpt.csv");
   });
 
-  it("throws when no file matches the suffix", () => {
-    fs.writeFileSync(path.join(tempDir, "SNF_2023_NMRC_DEF.csv"), "");
-    expect(() => findFileBySuffix(tempDir, "_RPT_")).toThrow(
-      `No file with suffix "_RPT_" found in ${tempDir}`,
-    );
+  it("skips rpt files that have no matching nmrc file", () => {
+    fs.writeFileSync(path.join(tempDir, "SNF24_2024_rpt.csv"), "");
+    // no nmrc file
+    const pairs = findRptNmrcPairs(tempDir);
+    expect(pairs).toHaveLength(0);
+  });
+
+  it("ignores non-rpt files", () => {
+    fs.writeFileSync(path.join(tempDir, "SNF24_2024_alpha.csv"), "");
+    fs.writeFileSync(path.join(tempDir, "SNF24_2024_rollup.csv"), "");
+    const pairs = findRptNmrcPairs(tempDir);
+    expect(pairs).toHaveLength(0);
   });
 });
 

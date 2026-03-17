@@ -7,11 +7,22 @@ Cost reports lag ~18 months from the fiscal year end. This is expected.
 
 ---
 
-## Step 1: Download the HCRIS zip files
+## Overview
 
-Each provider type has its own CMS page. Each download is a single zip containing **all available fiscal years** — the scripts will select the best report per provider per year automatically.
+CMS publishes HCRIS cost reports as CSV files. Each provider type has its own download page.
+The scripts accept a directory containing the CSV files and process all years found there.
 
-Download the "Data files" zip from each page:
+Each directory contains per-year files:
+- `*_rpt.csv` — report metadata (provider, dates, status)
+- `*_nmrc.csv` — numeric worksheet values (the financial data)
+- `*_alpha.csv` — alpha-numeric values (not used)
+- `*_rollup.csv` — rollup summaries (not used)
+
+---
+
+## Step 1: Download the data
+
+Each provider type has its own CMS page. Download the data zip from each:
 
 | Provider Type | Form | URL |
 |---|---|---|
@@ -19,69 +30,74 @@ Download the "Data files" zip from each page:
 | Home Health Agency (HHA) | CMS-1728-20 | https://www.cms.gov/data-research/statistics-trends-reports/cost-reports/home-health-agency-1728-2020-form |
 | Hospice | CMS-1984-14 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/hospice-1984-2014-form |
 
-On each page, look for a link labeled something like "SNF 10 Data files" / "HHA 20 Data files" / "Hospice 14 Data files" and download that zip.
+**What to download:**
+- SNF and HHA pages: look for "SNF 10 Data files zip" / "HHA 20 Data files zip" — these are annual releases (one year per download).
+- Hospice page: look for "Hospice 14 Data files" — this is a single download covering all years (FY2015–present).
 
-Save the files somewhere accessible, e.g. `~/Downloads/hcris/`.
+Extract each zip to its own directory under `~/Downloads/hcris/`. Example structure:
+
+```
+~/Downloads/hcris/
+  SNF24FY2025/
+    SNF24_2025_rpt.csv
+    SNF24_2025_nmrc.csv
+    ...
+  HHA20FY2025/
+    HHA20_2025_rpt.csv
+    HHA20_2025_nmrc.csv
+    ...
+  HOSPC14-ALL-YEARS/
+    HOSPC14_2015_rpt.csv
+    HOSPC14_2015_nmrc.csv
+    ...
+    HOSPC14_2025_rpt.csv
+    HOSPC14_2025_nmrc.csv
+    ...
+```
 
 ---
 
-## Step 2: Verify the zip contents
+## Step 2: Verify the file contents
 
-Each zip should contain exactly three files. Check with:
+Check that each directory has the expected `_rpt.csv` and `_nmrc.csv` files:
 
 ```bash
-unzip -l ~/Downloads/hcris/snf_fy2023.zip
+ls ~/Downloads/hcris/SNF24FY2025/
+ls ~/Downloads/hcris/HHA20FY2025/
+ls ~/Downloads/hcris/HOSPC14-ALL-YEARS/
 ```
 
-You should see files with these suffixes in their names:
-- `_RPT_` — report metadata (tens of thousands of rows)
-- `_NMRC_` — numeric values (millions of rows — this is normal)
-- `_ALPHNMRC_` — alpha-numeric values (not used by our scripts)
-
-If you don't see these suffixes, the file structure may have changed. Check the CMS data dictionary and update the suffix constants in `scripts/lib/hcris.ts` if needed.
+Each directory should have at least one `*_rpt.csv` and matching `*_nmrc.csv`.
 
 ---
 
-## Step 3: Verify worksheet coordinates (one-time setup or after form changes)
+## Step 3: Verify worksheet coordinates (first run or after CMS form changes)
 
-> **Skip this step** if you have already run HCRIS ingestion successfully before. Only repeat if CMS updates the form version.
+> **Skip this step** after you have run successfully before. Repeat only if CMS updates the form version.
 
-The scripts look up specific `(WKSHT_CD, LINE_NUM, CLMN_NUM)` values in the NMRC file. These coordinates are defined as constants in `scripts/lib/transform-hcris-*.ts`. CMS form instructions sometimes use different notation than the raw file values (e.g. the form says `E` but the file contains `E00001`).
+The scripts extract specific worksheet coordinates from the NMRC files. CMS sometimes changes the exact codes between form versions. Verify with:
 
-To verify, extract the zip and inspect the NMRC file:
-
+**SNF — check medicare_payments coordinate (E00A18A/01400/00100):**
 ```bash
-# Extract the zip
-unzip ~/Downloads/hcris/snf_fy2023.zip -d /tmp/hcris-snf/
+grep -m5 ',E00A18A,01400,00100,' ~/Downloads/hcris/SNF24FY2025/SNF24_2025_nmrc.csv
+```
+Expected: several rows with large dollar amounts ($100K–$10M range per provider).
 
-# View the NMRC file header and first 5 data rows
-head -6 /tmp/hcris-snf/*_NMRC_*
+**HHA — check medicare_payments coordinate (B000000/10000/01000):**
+```bash
+grep -m5 ',B000000,10000,01000,' ~/Downloads/hcris/HHA20FY2025/HHA20_2025_nmrc.csv
 ```
 
-The NMRC file is pipe-delimited (`|`). Columns are:
-`RPT_REC_NUM|WKSHT_CD|LINE_NUM|CLMN_NUM|ITM_VAL_NUM`
-
-Look at the actual `WKSHT_CD` values in the file. If they differ from the constants in `transform-hcris-snf.ts` (e.g. file has `E00001` instead of `E`), update the constants in that file before running.
-
-To spot-check a specific coordinate:
-
+**Hospice — check medicare_payments coordinate (B000000/10100/03A00):**
 ```bash
-# Find rows for worksheet E, line 1, column 1 in the SNF NMRC file
-grep -m5 '|E|1|1|' /tmp/hcris-snf/*_NMRC_*
+grep -m5 ',B000000,10100,03A00,' ~/Downloads/hcris/HOSPC14-ALL-YEARS/HOSPC14_2024_nmrc.csv
 ```
+
+If these return no results, the worksheet codes have changed. Check the CMS data dictionary and update the constants in `scripts/lib/transform-hcris-*.ts`.
 
 ---
 
 ## Step 4: Set environment variables
-
-The scripts require the same env vars as all other ingestion scripts:
-
-```bash
-export SUPABASE_URL="your-supabase-url"
-export SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
-```
-
-These are in your `.env.local` file. Load them with:
 
 ```bash
 export $(grep -v '^#' .env.local | xargs)
@@ -91,24 +107,24 @@ export $(grep -v '^#' .env.local | xargs)
 
 ## Step 5: Run the three scripts
 
-Run each script, passing the path to the corresponding zip file.
+Pass the path to each directory (not an individual file).
 
 **SNF:**
 ```bash
-npx tsx scripts/parse-hcris-snf.ts ~/Downloads/hcris/snf_fy2023.zip
+npx tsx scripts/parse-hcris-snf.ts ~/Downloads/hcris/SNF24FY2025
 ```
 
 **HHA:**
 ```bash
-npx tsx scripts/parse-hcris-hha.ts ~/Downloads/hcris/hha_fy2023.zip
+npx tsx scripts/parse-hcris-hha.ts ~/Downloads/hcris/HHA20FY2025
 ```
 
 **Hospice:**
 ```bash
-npx tsx scripts/parse-hcris-hospice.ts ~/Downloads/hcris/hospice_fy2023.zip
+npx tsx scripts/parse-hcris-hospice.ts ~/Downloads/hcris/HOSPC14-ALL-YEARS
 ```
 
-Each script will print progress and a summary at the end. Expected runtime: 5–15 minutes each.
+Each script will print progress per year file and a summary at the end. Expected runtime: 5–20 minutes each (Hospice is slowest since it processes all years).
 
 ---
 
@@ -118,36 +134,35 @@ A successful run looks like:
 
 ```
 --- HCRIS SNF Ingestion Summary ---
-Fiscal years found:            2021, 2022, 2023
-Reports processed:             14,802
-Providers matched:             14,650  (found in DB)
-Providers missing:                152  (CCN not found)
-payment_history rows upserted: 14,650
-providers updated:             14,650
-Total Medicare revenue:        $42,847,203,441
+Fiscal years found:            2025
+Reports processed:             15,204
+Providers matched:             14,891  (found in DB)
+Providers missing:                313  (CCN not found)
+payment_history rows upserted: 14,891
+providers updated:             14,891
+Total Medicare revenue:        $38,421,093,882
 
 Ingestion complete.
 ```
 
 **What to check:**
-- `Providers missing` — CCNs in HCRIS that don't match any provider in our database. A small number (1–5%) is normal (closed providers or providers not yet in our dataset). A large number may indicate a CCN format mismatch — compare the raw `PRVDR_NUM` values in the RPT file against our `providers.cms_id` column.
-- `Total Medicare revenue` — Cross-reference against prior quarter. A dramatic change warrants investigation.
-- `providers skipped (null pay)` — Providers whose highest fiscal year had no extractable payment amount. Investigate if unexpectedly high.
+- `Providers missing` — CCNs in HCRIS that don't match our database. 1–5% is normal (closed providers, new providers not yet ingested). A large number (>10%) may mean a CCN format mismatch.
+- `Total Medicare revenue` — compare against the prior quarter. A dramatic change warrants investigation.
+- `providers skipped (null pay)` — providers whose highest fiscal year had no extractable payment amount. Investigate if unexpectedly high.
 
 ---
 
 ## Step 7: If a script fails mid-run
 
-The scripts are **idempotent** — re-running is safe. Both `payment_history` (upserted on `provider_id + fiscal_year`) and `providers` (updated by UUID) will overwrite existing values with the same data. No duplicate rows will be created.
-
-If the script fails early (e.g. during zip extraction), no data will have been written — just fix the issue and re-run.
+The scripts are **idempotent** — re-running is safe. `payment_history` upserts on `provider_id + fiscal_year` and `providers` updates by UUID, so no duplicate data is created.
 
 ---
 
 ## Quarterly checklist
 
-- [ ] Downloaded all three HCRIS zip files for the most recent fiscal year
-- [ ] Verified zip contents (three files per zip with expected suffixes)
+- [ ] Downloaded SNF data zip and extracted to `~/Downloads/hcris/SNF24FY<YEAR>/`
+- [ ] Downloaded HHA data zip and extracted to `~/Downloads/hcris/HHA20FY<YEAR>/`
+- [ ] Downloaded Hospice data zip and extracted to `~/Downloads/hcris/HOSPC14-ALL-YEARS/` (replace if newer all-years bundle available)
 - [ ] Ran `parse-hcris-snf.ts` — reviewed summary, checked providers missing count
 - [ ] Ran `parse-hcris-hha.ts` — reviewed summary
 - [ ] Ran `parse-hcris-hospice.ts` — reviewed summary

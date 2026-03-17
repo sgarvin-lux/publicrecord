@@ -3,12 +3,13 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
 /**
  * Worksheet coordinates for Hospice (CMS-1984-14).
  *
- * IMPORTANT: Verify these values against actual HCRIS files before first run.
- * See runbook for verification steps.
+ * IMPORTANT: Verify these coordinates against actual data before first run.
+ * Use: grep ',B000000,10100,03A00,' your_nmrc_file.csv | head -5
+ * to confirm the value matches expected Medicare payments.
  */
 const COORDS = {
-  medicare_payments: { wksht: "E",  line: "1", col: "1" },
-  total_days:        { wksht: "S2", line: "1", col: "1" },
+  medicare_payments: { wksht: "B000000", line: "10100", col: "03A00" },
+  total_days:        { wksht: "S100000", line: "03100", col: "00100" },
 } as const;
 
 /**

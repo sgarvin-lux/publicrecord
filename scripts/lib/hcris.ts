@@ -1,8 +1,6 @@
 import * as fs from "fs";
-import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
-import AdmZip from "adm-zip";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../../src/lib/supabase/database.types";
 
@@ -48,44 +46,33 @@ export interface ProviderUpdate {
 
 // ─── File Utilities ────────────────────────────────────────────────────────
 
-/** Extract a zip file to a new temp directory. Returns the temp dir path. */
-export function extractZip(zipPath: string): string {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hcris-"));
-  const zip = new AdmZip(zipPath);
-  zip.extractAllTo(tempDir, true);
-  return tempDir;
-}
-
-/** Clean up a temp directory recursively. Non-fatal if dir doesn't exist. */
-export function cleanupTempDir(tempDir: string): void {
-  try {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  } catch {
-    // Best-effort cleanup
-  }
-}
+/**
+ * Column names for RPT file (comma-delimited, no header, positional).
+ * Standard HCRIS cost report RPT file format.
+ */
+export const RPT_COLS = [
+  "RPT_REC_NUM", "PRVDR_CTRL_TYPE_CD", "PRVDR_NUM", "NPI",
+  "RPT_STUS_CD", "FY_BGN_DT", "FY_END_DT", "PROC_DT",
+  "INITL_RPT_SW", "LAST_RPT_SW", "TRNSMTL_NUM", "FI_NUM",
+  "ADR_VNDR_CD", "FI_CREAT_DT", "UTIL_CD", "NPR_DT",
+  "SPEC_IND", "INITL_RPT_DT",
+] as const;
 
 /**
- * Find the path of a file inside a directory whose name contains the given
- * suffix (case-insensitive). Throws if no match is found.
+ * Column names for NMRC file (comma-delimited, no header, positional).
+ * Standard HCRIS cost report NMRC file format.
  */
-export function findFileBySuffix(dir: string, suffix: string): string {
-  const files = fs.readdirSync(dir);
-  const match = files.find((f) =>
-    f.toUpperCase().includes(suffix.toUpperCase()),
-  );
-  if (!match) {
-    throw new Error(`No file with suffix "${suffix}" found in ${dir}`);
-  }
-  return path.join(dir, match);
-}
+export const NMRC_COLS = [
+  "RPT_REC_NUM", "WKSHT_CD", "LINE_NUM", "CLMN_NUM", "ITM_VAL_NUM",
+] as const;
 
 /**
- * Parse a pipe-delimited file (|) into an array of row objects keyed by
- * header name. Fields are trimmed. Encoding is latin1 (standard for HCRIS).
+ * Parse an HCRIS CSV file (no header row, comma-delimited, latin1 encoding).
+ * Maps each row's positional fields to the provided column names.
  */
-export async function parsePipeDelimited(
+export async function parseHcrisFile(
   filePath: string,
+  colNames: readonly string[],
 ): Promise<Record<string, string>[]> {
   const rows: Record<string, string>[] = [];
   const rl = readline.createInterface({
@@ -93,25 +80,41 @@ export async function parsePipeDelimited(
     crlfDelay: Infinity,
   });
 
-  let headers: string[] = [];
-  let isFirst = true;
-
   for await (const line of rl) {
     if (!line.trim()) continue;
-    const cols = line.split("|");
-    if (isFirst) {
-      headers = cols.map((h) => h.trim());
-      isFirst = false;
-      continue;
-    }
+    const cols = line.split(",");
     const row: Record<string, string> = {};
-    for (let i = 0; i < headers.length; i++) {
-      row[headers[i]] = (cols[i] ?? "").trim();
+    for (let i = 0; i < colNames.length; i++) {
+      row[colNames[i]] = (cols[i] ?? "").trim();
     }
     rows.push(row);
   }
 
   return rows;
+}
+
+/**
+ * Find all RPT/NMRC file pairs in a directory.
+ * Matches files ending in `_rpt.csv` with their corresponding `_nmrc.csv` file.
+ * Returns pairs sorted by filename (i.e. by year for standard HCRIS naming).
+ */
+export function findRptNmrcPairs(
+  dir: string,
+): Array<{ rpt: string; nmrc: string }> {
+  const files = fs.readdirSync(dir);
+  const rptFiles = files.filter((f) => /_rpt\.csv$/i.test(f)).sort();
+
+  const pairs: Array<{ rpt: string; nmrc: string }> = [];
+  for (const rptFile of rptFiles) {
+    const nmrcFile = rptFile.replace(/_rpt\.csv$/i, "_nmrc.csv");
+    if (files.includes(nmrcFile)) {
+      pairs.push({
+        rpt: path.join(dir, rptFile),
+        nmrc: path.join(dir, nmrcFile),
+      });
+    }
+  }
+  return pairs;
 }
 
 // ─── Report Selection ──────────────────────────────────────────────────────

@@ -3,13 +3,14 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
 /**
  * Worksheet coordinates for HHA (CMS-1728-20).
  *
- * IMPORTANT: Verify these values against actual HCRIS files before first run.
- * See runbook for verification steps.
+ * IMPORTANT: Verify these coordinates against actual data before first run.
+ * Use: grep ',B000000,10000,01000,' your_nmrc_file.csv | head -5
+ * to confirm the value matches expected Medicare payments.
  */
 const COORDS = {
-  medicare_payments: { wksht: "E",  line: "1", col: "1" },
-  total_visits:      { wksht: "H1", line: "1", col: "1" },
-  total_patients:    { wksht: "H1", line: "1", col: "2" },
+  medicare_payments: { wksht: "B000000", line: "10000", col: "01000" },
+  total_visits:      { wksht: "S300004", line: "00200", col: "00500" },
+  total_patients:    { wksht: "S300004", line: "00100", col: "00500" },
 } as const;
 
 export interface HhaPaymentRecord extends PaymentRecord {
