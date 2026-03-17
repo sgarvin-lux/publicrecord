@@ -76,17 +76,31 @@ export async function main() {
     );
   }
 
-  // 3. Transform records
-  const transformed: PenaltyRow[] = [];
+  // 3. Transform and deduplicate records
+  const allTransformed: PenaltyRow[] = [];
   let skippedCount = 0;
 
   for (const raw of rawRecords) {
     const row = transformPenaltyRecord(raw, providerMap);
     if (row) {
-      transformed.push(row);
+      allTransformed.push(row);
     } else {
       skippedCount++;
     }
+  }
+
+  // Deduplicate by natural key (last-writer-wins to match upsert semantics)
+  const seen = new Map<string, PenaltyRow>();
+  for (const row of allTransformed) {
+    const key = `${row.provider_id}|${row.penalty_date}|${row.penalty_type}|${row.amount}`;
+    seen.set(key, row);
+  }
+  const transformed = [...seen.values()];
+
+  if (transformed.length < allTransformed.length) {
+    console.log(
+      `Deduplicated: ${allTransformed.length} → ${transformed.length} unique records`,
+    );
   }
 
   console.log(
