@@ -122,7 +122,10 @@ export async function main() {
   console.log("Ingestion complete.");
 }
 
-main().catch((error) => {
-  console.error("Ingestion failed:", error);
-  process.exit(1);
-});
+// Only auto-run when executed directly, not when imported by tests
+if (process.env.NODE_ENV !== "test") {
+  main().catch((error) => {
+    console.error("Ingestion failed:", error);
+    process.exit(1);
+  });
+}
