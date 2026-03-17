@@ -24,9 +24,7 @@ async function upsertBatch(batch: ProviderRow[]): Promise<number> {
 function deduplicateByCmsId(rows: ProviderRow[]): ProviderRow[] {
   const seen = new Map<string, ProviderRow>();
   for (const row of rows) {
-    if (!seen.has(row.cms_id)) {
-      seen.set(row.cms_id, row);
-    }
+    seen.set(row.cms_id, row); // last-writer-wins: matches upsert semantics
   }
   return [...seen.values()];
 }
