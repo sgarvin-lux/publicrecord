@@ -52,15 +52,15 @@ Healthcare transparency platform bringing accountability through public data. Bu
 
 ### Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run format` | Format code with Prettier |
-| `npm run format:check` | Check formatting |
-| `npm run type-check` | Run TypeScript type checking |
+| Command                | Description                  |
+| ---------------------- | ---------------------------- |
+| `npm run dev`          | Start development server     |
+| `npm run build`        | Build for production         |
+| `npm run start`        | Start production server      |
+| `npm run lint`         | Run ESLint                   |
+| `npm run format`       | Format code with Prettier    |
+| `npm run format:check` | Check formatting             |
+| `npm run type-check`   | Run TypeScript type checking |
 
 ## Contributing
 
