@@ -338,11 +338,20 @@ export async function resolveProviders(
 export async function upsertPaymentHistory(
   rows: PaymentHistoryRow[],
 ): Promise<number> {
+  // Deduplicate by (provider_id, fiscal_year) — last-seen wins.
+  // Required when processing all-years bundles where the same provider-year
+  // can appear in multiple year files (e.g., late filings).
+  const deduped = new Map<string, PaymentHistoryRow>();
+  for (const row of rows) {
+    deduped.set(`${row.provider_id}:${row.fiscal_year}`, row);
+  }
+  const dedupedRows = [...deduped.values()];
+
   const supabaseAdmin = await getSupabaseAdmin();
   const BATCH_SIZE = 500;
   let total = 0;
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+    const batch = dedupedRows.slice(i, i + BATCH_SIZE);
     const { error, count } = await supabaseAdmin
       .from("payment_history")
       .upsert(batch, {
