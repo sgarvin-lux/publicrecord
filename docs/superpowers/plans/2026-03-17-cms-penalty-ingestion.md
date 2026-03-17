@@ -14,18 +14,18 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `scripts/lib/cms-api.ts` | Create | Reusable paginated CMS API client with retry |
-| `scripts/lib/supabase-admin.ts` | Create | Service-role Supabase client for scripts |
-| `scripts/ingest-penalties.ts` | Create | Main ingestion orchestrator |
-| `scripts/lib/__tests__/cms-api.test.ts` | Create | Unit tests for CMS API client |
-| `scripts/lib/__tests__/transform-penalties.test.ts` | Create | Unit tests for penalty transform logic |
-| `scripts/__tests__/ingest-penalties.test.ts` | Create | Integration test for full pipeline |
-| `supabase/migrations/20260317000009_penalties_unique_constraint.sql` | Create | Unique constraint for upserts |
-| `.github/workflows/ingest-penalties.yml` | Create | Daily cron + manual dispatch |
-| `package.json` | Modify | Add vitest, tsx devDeps; add test script |
-| `vitest.config.ts` | Create | Vitest configuration |
+| File                                                                 | Action | Responsibility                               |
+| -------------------------------------------------------------------- | ------ | -------------------------------------------- |
+| `scripts/lib/cms-api.ts`                                             | Create | Reusable paginated CMS API client with retry |
+| `scripts/lib/supabase-admin.ts`                                      | Create | Service-role Supabase client for scripts     |
+| `scripts/ingest-penalties.ts`                                        | Create | Main ingestion orchestrator                  |
+| `scripts/lib/__tests__/cms-api.test.ts`                              | Create | Unit tests for CMS API client                |
+| `scripts/lib/__tests__/transform-penalties.test.ts`                  | Create | Unit tests for penalty transform logic       |
+| `scripts/__tests__/ingest-penalties.test.ts`                         | Create | Integration test for full pipeline           |
+| `supabase/migrations/20260317000009_penalties_unique_constraint.sql` | Create | Unique constraint for upserts                |
+| `.github/workflows/ingest-penalties.yml`                             | Create | Daily cron + manual dispatch                 |
+| `package.json`                                                       | Modify | Add vitest, tsx devDeps; add test script     |
+| `vitest.config.ts`                                                   | Create | Vitest configuration                         |
 
 ---
 
@@ -34,6 +34,7 @@
 ### Task 1: Add Vitest and tsx
 
 **Files:**
+
 - Modify: `package.json`
 - Create: `vitest.config.ts`
 
@@ -46,6 +47,7 @@ npm install -D vitest tsx
 - [ ] **Step 2: Add test script to package.json**
 
 Add to `"scripts"`:
+
 ```json
 "test": "vitest run",
 "test:watch": "vitest"
@@ -87,6 +89,7 @@ git commit -m "chore: add vitest and tsx for script testing"
 ### Task 2: Database migration — penalties unique constraint
 
 **Files:**
+
 - Create: `supabase/migrations/20260317000009_penalties_unique_constraint.sql`
 
 - [ ] **Step 1: Create migration file**
@@ -116,6 +119,7 @@ git commit -m "feat: add unique constraint on penalties for upsert support"
 ### Task 3: Supabase admin client
 
 **Files:**
+
 - Create: `scripts/lib/supabase-admin.ts`
 
 - [ ] **Step 1: Create the admin client**
@@ -151,6 +155,7 @@ git commit -m "feat: add shared Supabase admin client for ingestion scripts"
 ### Task 4: CMS API client — tests first
 
 **Files:**
+
 - Create: `scripts/lib/cms-api.ts`
 - Create: `scripts/lib/__tests__/cms-api.test.ts`
 
@@ -264,8 +269,7 @@ Expected: FAIL — cannot resolve `../cms-api`
 - [ ] **Step 3: Implement fetchAllPages**
 
 ```ts
-const CMS_API_BASE =
-  "https://data.cms.gov/provider-data/api/1/datastore/query";
+const CMS_API_BASE = "https://data.cms.gov/provider-data/api/1/datastore/query";
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 500;
 
@@ -290,7 +294,9 @@ async function fetchPage(
       });
 
       if (!response.ok) {
-        throw new Error(`CMS API returned ${response.status} ${response.statusText}`);
+        throw new Error(
+          `CMS API returned ${response.status} ${response.statusText}`,
+        );
       }
 
       return await response.json();
@@ -351,6 +357,7 @@ git commit -m "feat: add reusable CMS API client with pagination and retry"
 ### Task 5: Penalty transform — tests first
 
 **Files:**
+
 - Create: `scripts/lib/transform-penalties.ts`
 - Create: `scripts/lib/__tests__/transform-penalties.test.ts`
 
@@ -621,6 +628,7 @@ git commit -m "feat: add penalty record transform with date, amount, and descrip
 ### Task 6: Main ingestion script
 
 **Files:**
+
 - Create: `scripts/ingest-penalties.ts`
 
 - [ ] **Step 1: Write the main ingestion script**
@@ -628,7 +636,10 @@ git commit -m "feat: add penalty record transform with date, amount, and descrip
 ```ts
 import { fetchAllPages } from "./lib/cms-api";
 import { supabaseAdmin } from "./lib/supabase-admin";
-import { transformPenaltyRecord, type PenaltyRow } from "./lib/transform-penalties";
+import {
+  transformPenaltyRecord,
+  type PenaltyRow,
+} from "./lib/transform-penalties";
 
 const DATASET_ID = "g6vv-u9sr";
 const UPSERT_BATCH_SIZE = 500;
@@ -777,6 +788,7 @@ git commit -m "feat: add main CMS penalty ingestion script"
 ### Task 7: Integration test
 
 **Files:**
+
 - Create: `scripts/__tests__/ingest-penalties.test.ts`
 
 This test verifies the full pipeline by importing and running `main()` with mocked dependencies, then asserting the correct upsert payloads reach Supabase.
@@ -912,6 +924,7 @@ git commit -m "test: add integration test for penalty ingestion pipeline"
 ### Task 8: GitHub Actions workflow
 
 **Files:**
+
 - Create: `.github/workflows/ingest-penalties.yml`
 
 - [ ] **Step 1: Create workflow file**

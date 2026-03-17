@@ -1,6 +1,9 @@
 import { fetchAllPages } from "./lib/cms-api";
 import { supabaseAdmin } from "./lib/supabase-admin";
-import { transformPenaltyRecord, type PenaltyRow } from "./lib/transform-penalties";
+import {
+  transformPenaltyRecord,
+  type PenaltyRow,
+} from "./lib/transform-penalties";
 
 const DATASET_ID = "g6vv-u9sr";
 const UPSERT_BATCH_SIZE = 500;

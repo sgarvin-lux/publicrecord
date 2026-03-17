@@ -64,14 +64,20 @@ describe("ingest-penalties pipeline", () => {
 
     // Capture upsert calls to verify payloads
     const upsertCalls: unknown[] = [];
-    const mockUpsert = vi.fn().mockImplementation((batch, _opts) => {
+    const mockUpsert = vi.fn().mockImplementation((batch: unknown[]) => {
       upsertCalls.push(batch);
       return Promise.resolve({ error: null, count: batch.length });
     });
 
     mockFrom.mockImplementation((table: string) => {
-      if (table === "providers") return { select: mockSelect } as any;
-      if (table === "penalties") return { upsert: mockUpsert } as any;
+      if (table === "providers")
+        return { select: mockSelect } as unknown as ReturnType<
+          typeof supabaseAdmin.from
+        >;
+      if (table === "penalties")
+        return { upsert: mockUpsert } as unknown as ReturnType<
+          typeof supabaseAdmin.from
+        >;
       throw new Error(`Unexpected table: ${table}`);
     });
 

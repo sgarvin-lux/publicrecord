@@ -1,5 +1,4 @@
-const CMS_API_BASE =
-  "https://data.cms.gov/provider-data/api/1/datastore/query";
+const CMS_API_BASE = "https://data.cms.gov/provider-data/api/1/datastore/query";
 const MAX_RETRIES = 3;
 const INITIAL_BACKOFF_MS = 500;
 
@@ -24,7 +23,9 @@ async function fetchPage(
       });
 
       if (!response.ok) {
-        throw new Error(`CMS API returned ${response.status} ${response.statusText}`);
+        throw new Error(
+          `CMS API returned ${response.status} ${response.statusText}`,
+        );
       }
 
       return await response.json();
