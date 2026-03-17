@@ -18,13 +18,13 @@ Ingest nursing home penalty/enforcement data from CMS into the `penalties` table
 
 ### CMS Field Mapping
 
-| CMS API Field                    | Our Column       | Transform                                              |
-| -------------------------------- | ---------------- | ------------------------------------------------------ |
-| `cms_certification_number_ccn`   | `provider_id`    | Lookup via `providers.cms_id`                          |
-| `penalty_date`                   | `penalty_date`   | Parse from `MM/DD/YYYY` to `YYYY-MM-DD`               |
-| `penalty_type`                   | `penalty_type`   | As-is (`"Fine"`, `"Payment Denial"`); skip if null     |
-| `fine_amount`                    | `amount`         | Parse to number; default `0` for Payment Denial records |
-| (composed)                       | `description`    | See description composition rules below                |
+| CMS API Field                  | Our Column     | Transform                                               |
+| ------------------------------ | -------------- | ------------------------------------------------------- |
+| `cms_certification_number_ccn` | `provider_id`  | Lookup via `providers.cms_id`                           |
+| `penalty_date`                 | `penalty_date` | Parse from `MM/DD/YYYY` to `YYYY-MM-DD`                 |
+| `penalty_type`                 | `penalty_type` | As-is (`"Fine"`, `"Payment Denial"`); skip if null      |
+| `fine_amount`                  | `amount`       | Parse to number; default `0` for Payment Denial records |
+| (composed)                     | `description`  | See description composition rules below                 |
 
 ### Data Handling Notes
 
@@ -90,7 +90,7 @@ fetchAllPages(datasetId: string, pageSize?: number): Promise<Record<string, stri
 name: Ingest CMS Penalties
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: "0 3 * * *"
   workflow_dispatch: {}
 jobs:
   ingest:
@@ -99,7 +99,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
       - run: npm ci
       - run: npx tsx scripts/ingest-penalties.ts
         env:
@@ -109,12 +109,12 @@ jobs:
 
 ## Error Handling
 
-| Scenario                | Behavior                                                    |
-| ----------------------- | ----------------------------------------------------------- |
-| CMS API page failure    | Retry up to 3 times with exponential backoff, then throw    |
-| Unknown CMS ID          | Log warning, skip record, continue                          |
-| Upsert batch failure    | Log error with batch details, continue remaining batches    |
-| Zero records upserted   | Exit code 1 (signals total failure to GitHub Actions)       |
+| Scenario              | Behavior                                                 |
+| --------------------- | -------------------------------------------------------- |
+| CMS API page failure  | Retry up to 3 times with exponential backoff, then throw |
+| Unknown CMS ID        | Log warning, skip record, continue                       |
+| Upsert batch failure  | Log error with batch details, continue remaining batches |
+| Zero records upserted | Exit code 1 (signals total failure to GitHub Actions)    |
 
 ## Testing
 

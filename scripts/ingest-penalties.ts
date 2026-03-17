@@ -41,8 +41,7 @@ async function upsertBatch(batch: PenaltyRow[]): Promise<number> {
   });
 
   if (error) {
-    console.error(`Upsert batch failed: ${error.message}`);
-    return 0;
+    throw new Error(`Upsert batch failed: ${error.message}`);
   }
 
   return count ?? batch.length;
@@ -125,8 +124,10 @@ export async function main() {
   console.log("Ingestion complete.");
 }
 
-// Only auto-run when executed directly, not when imported by tests
-if (process.env.NODE_ENV !== "test") {
+// Only auto-run when executed directly as a script, not when imported by tests
+const isDirectRun =
+  import.meta.url === new URL(process.argv[1], "file://").href;
+if (isDirectRun) {
   main().catch((error) => {
     console.error("Ingestion failed:", error);
     process.exit(1);

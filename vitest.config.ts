@@ -6,6 +6,7 @@ export default defineConfig({
     globals: true,
     include: ["scripts/**/__tests__/**/*.test.ts"],
     passWithNoTests: true,
+    env: { NODE_ENV: "test" },
   },
   resolve: {
     alias: {
