@@ -258,7 +258,8 @@ export function computeChargeToPaymentRatio(
 ): number | null {
   if (totalCharges === null || medicarePayments === null) return null;
   if (medicarePayments === 0) return null;
-  return Math.round((totalCharges / medicarePayments) * 100) / 100;
+  const ratio = Math.round((totalCharges / medicarePayments) * 100) / 100;
+  return Math.min(ratio, 9999.99); // cap to fit DECIMAL(6,2)
 }
 
 // ─── Provider Update Builder ───────────────────────────────────────────────
