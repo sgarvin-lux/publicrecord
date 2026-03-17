@@ -1,8 +1,8 @@
-name: Ingest Providers
+name: Ingest CMS Providers
 
 on:
   schedule:
-    # Run daily at 2am UTC
+    # Run daily at 2am UTC (before penalties at 3am)
     - cron: "0 2 * * *"
   workflow_dispatch:
 
@@ -21,7 +21,7 @@ jobs:
       - run: npm ci
 
       - name: Ingest provider data
-        run: echo "TODO - implement provider data ingestion"
+        run: npx tsx scripts/ingest-providers.ts
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
