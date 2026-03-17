@@ -9,17 +9,17 @@ Cost reports lag ~18 months from the fiscal year end. This is expected.
 
 ## Step 1: Download the HCRIS zip files
 
-Download the three zip files from the CMS cost reports page:
+Each provider type has its own CMS page. Each download is a single zip containing **all available fiscal years** — the scripts will select the best report per provider per year automatically.
 
-**URL:** https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/cost-reports-fiscal-year
+Download the "Data files" zip from each page:
 
-On that page, look for the most recent fiscal year available. Download one zip for each provider type:
-
-| Provider Type | Form | What to look for on the page |
+| Provider Type | Form | URL |
 |---|---|---|
-| Skilled Nursing Facility (SNF) | CMS-2540-10 | "SNF" or "Skilled Nursing" |
-| Home Health Agency (HHA) | CMS-1728-20 | "HHA" or "Home Health" |
-| Hospice | CMS-1984-14 | "Hospice" |
+| Skilled Nursing Facility (SNF) | CMS-2540-10 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/skilled-nursing-facility-2540-2010-form |
+| Home Health Agency (HHA) | CMS-1728-20 | https://www.cms.gov/data-research/statistics-trends-reports/cost-reports/home-health-agency-1728-2020-form |
+| Hospice | CMS-1984-14 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/hospice-1984-2014-form |
+
+On each page, look for a link labeled something like "SNF 10 Data files" / "HHA 20 Data files" / "Hospice 14 Data files" and download that zip.
 
 Save the files somewhere accessible, e.g. `~/Downloads/hcris/`.
 
