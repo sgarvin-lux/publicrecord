@@ -1,0 +1,27 @@
+name: Ingest CMS Deficiencies
+
+on:
+  schedule:
+    # Run daily at 2:30am UTC (after providers at 2am, before penalties at 3am)
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - run: npm ci
+
+      - name: Ingest deficiency data
+        run: npx tsx scripts/ingest-deficiencies.ts
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
