@@ -71,4 +71,9 @@ describe("transformQualitySnf", () => {
     const result = transformQualitySnf([{ ...baseRow, national_rate: "" }], lookup);
     expect(result[0].national_avg).toBeNull();
   });
+
+  it("skips rows with empty measure_cd", () => {
+    const result = transformQualitySnf([{ ...baseRow, measure_cd: "" }], lookup);
+    expect(result).toHaveLength(0);
+  });
 });

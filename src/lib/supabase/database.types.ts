@@ -386,7 +386,7 @@ export type Database = {
       quality_measures: {
         Row: {
           created_at: string | null;
-          data_source: string | null;
+          data_source: string;
           id: string;
           measure_code: string;
           measure_name: string | null;
@@ -399,7 +399,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
-          data_source?: string | null;
+          data_source: string;
           id?: string;
           measure_code: string;
           measure_name?: string | null;
@@ -412,7 +412,7 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
-          data_source?: string | null;
+          data_source?: string;
           id?: string;
           measure_code?: string;
           measure_name?: string | null;

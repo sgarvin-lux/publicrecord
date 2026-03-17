@@ -7,7 +7,7 @@ CREATE TABLE quality_measures (
   national_avg DECIMAL(8,2),
   state_avg DECIMAL(8,2),
   period VARCHAR,
-  data_source VARCHAR,
+  data_source VARCHAR NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

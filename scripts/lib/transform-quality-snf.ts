@@ -15,13 +15,16 @@ export function transformQualitySnf(
     const providerId = lookup.get(ccn);
     if (!providerId) continue;
 
+    const code = row.measure_cd?.trim();
+    if (!code) continue;
+
     const startDate = row.start_date?.trim();
     const endDate = row.end_date?.trim();
     const period = startDate && endDate ? `${startDate}-${endDate}` : null;
 
     result.push({
       provider_id: providerId,
-      measure_code: row.measure_cd?.trim() ?? "",
+      measure_code: code,
       measure_name: row.measure_description?.trim() ?? null,
       score: parseScore(row.score),
       national_avg: parseScore(row.national_rate),
