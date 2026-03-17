@@ -6,13 +6,10 @@ const lookup = new Map([["015001", "uuid-provider-1"]]);
 describe("transformQualitySnf", () => {
   const baseRow = {
     cms_certification_number_ccn: "015001",
-    measure_cd: "NH_QM_001",
+    measure_code: "401",
     measure_description: "Percent of long-stay residents who received an antipsychotic",
-    score: "14.5",
-    national_rate: "15.2",
-    state_average: "13.8",
-    start_date: "04/01/2024",
-    end_date: "03/31/2025",
+    four_quarter_average_score: "14.5",
+    measure_period: "2024Q4-2025Q3",
   };
 
   it("transforms a complete SNF quality measure row", () => {
@@ -20,12 +17,12 @@ describe("transformQualitySnf", () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual({
       provider_id: "uuid-provider-1",
-      measure_code: "NH_QM_001",
+      measure_code: "401",
       measure_name: "Percent of long-stay residents who received an antipsychotic",
       score: 14.5,
-      national_avg: 15.2,
-      state_avg: 13.8,
-      period: "04/01/2024-03/31/2025",
+      national_avg: null,
+      state_avg: null,
+      period: "2024Q4-2025Q3",
       data_source: "cms-mds",
     });
   });
@@ -47,33 +44,29 @@ describe("transformQualitySnf", () => {
   });
 
   it("returns null score for 'Not Available'", () => {
-    const result = transformQualitySnf([{ ...baseRow, score: "Not Available" }], lookup);
+    const result = transformQualitySnf([{ ...baseRow, four_quarter_average_score: "Not Available" }], lookup);
     expect(result[0].score).toBeNull();
   });
 
   it("returns null score for empty string", () => {
-    const result = transformQualitySnf([{ ...baseRow, score: "" }], lookup);
+    const result = transformQualitySnf([{ ...baseRow, four_quarter_average_score: "" }], lookup);
     expect(result[0].score).toBeNull();
   });
 
-  it("returns null period when start_date is empty", () => {
-    const result = transformQualitySnf([{ ...baseRow, start_date: "" }], lookup);
+  it("returns null period when measure_period is undefined", () => {
+    const { measure_period: _, ...rowWithoutPeriod } = baseRow;
+    const result = transformQualitySnf([rowWithoutPeriod], lookup);
     expect(result[0].period).toBeNull();
   });
 
-  it("returns null period when end_date is undefined", () => {
-    const { end_date: _, ...rowWithoutEnd } = baseRow;
-    const result = transformQualitySnf([rowWithoutEnd], lookup);
-    expect(result[0].period).toBeNull();
-  });
-
-  it("returns null national_avg when national_rate is empty", () => {
-    const result = transformQualitySnf([{ ...baseRow, national_rate: "" }], lookup);
+  it("always returns null for national_avg and state_avg", () => {
+    const result = transformQualitySnf([baseRow], lookup);
     expect(result[0].national_avg).toBeNull();
+    expect(result[0].state_avg).toBeNull();
   });
 
-  it("skips rows with empty measure_cd", () => {
-    const result = transformQualitySnf([{ ...baseRow, measure_cd: "" }], lookup);
+  it("skips rows with empty measure_code", () => {
+    const result = transformQualitySnf([{ ...baseRow, measure_code: "" }], lookup);
     expect(result).toHaveLength(0);
   });
 });
