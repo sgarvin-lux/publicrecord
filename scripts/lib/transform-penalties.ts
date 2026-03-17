@@ -1,5 +1,10 @@
 export function parseCmsDate(dateStr: string | undefined): string | null {
   if (!dateStr) return null;
+
+  // Already in YYYY-MM-DD format
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+  // MM/DD/YYYY format
   const parts = dateStr.split("/");
   if (parts.length !== 3) return null;
   const [month, day, year] = parts;
