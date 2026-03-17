@@ -1,4 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   parseFiscalYear,
   findFileBySuffix,
@@ -36,21 +39,28 @@ describe("parseFiscalYear", () => {
 // ─── findFileBySuffix ──────────────────────────────────────────────────────
 
 describe("findFileBySuffix", () => {
-  it("finds a file whose name contains the suffix (case-insensitive)", () => {
-    const mockFiles = ["SNF_2023_RPT_ABC.csv", "SNF_2023_NMRC_DEF.csv", "SNF_2023_ALPHNMRC_GHI.csv"];
-    vi.spyOn(require("fs"), "readdirSync").mockReturnValueOnce(mockFiles as any);
-    vi.spyOn(require("path"), "join").mockImplementation((...args) => args.join("/"));
-    // We test the pure logic by calling with a real temp dir in integration;
-    // here we verify the suffix match is case-insensitive
-    expect(mockFiles.find((f) => f.toUpperCase().includes("_RPT_"))).toBe("SNF_2023_RPT_ABC.csv");
-    expect(mockFiles.find((f) => f.toUpperCase().includes("_NMRC_"))).toBe("SNF_2023_NMRC_DEF.csv");
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "hcris-test-"));
   });
 
-  it("throws if no file matches the suffix", () => {
-    // Direct logic test: no file with _RPT_ suffix
-    const files = ["SNF_2023_NMRC_DEF.csv"];
-    const match = files.find((f) => f.toUpperCase().includes("_RPT_"));
-    expect(match).toBeUndefined();
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it("returns the full path of the matching file (case-insensitive suffix)", () => {
+    fs.writeFileSync(path.join(tempDir, "SNF_2023_RPT_ABC.csv"), "");
+    fs.writeFileSync(path.join(tempDir, "SNF_2023_NMRC_DEF.csv"), "");
+    const result = findFileBySuffix(tempDir, "_rpt_");
+    expect(result).toBe(path.join(tempDir, "SNF_2023_RPT_ABC.csv"));
+  });
+
+  it("throws when no file matches the suffix", () => {
+    fs.writeFileSync(path.join(tempDir, "SNF_2023_NMRC_DEF.csv"), "");
+    expect(() => findFileBySuffix(tempDir, "_RPT_")).toThrow(
+      `No file with suffix "_RPT_" found in ${tempDir}`,
+    );
   });
 });
 

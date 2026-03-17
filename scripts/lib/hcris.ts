@@ -3,16 +3,18 @@ import * as os from "os";
 import * as path from "path";
 import * as readline from "readline";
 import AdmZip from "adm-zip";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "../../src/lib/supabase/database.types";
 
 // Lazy import to avoid throwing at module load time in test environments
 // where SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set.
-let _supabaseAdmin: Awaited<ReturnType<typeof import("./supabase-admin")["default"]>> | undefined;
-async function getSupabaseAdmin() {
+let _supabaseAdmin: SupabaseClient<Database> | undefined;
+async function getSupabaseAdmin(): Promise<SupabaseClient<Database>> {
   if (!_supabaseAdmin) {
     const mod = await import("./supabase-admin");
-    _supabaseAdmin = mod.supabaseAdmin as any;
+    _supabaseAdmin = mod.supabaseAdmin;
   }
-  return _supabaseAdmin as NonNullable<typeof _supabaseAdmin>;
+  return _supabaseAdmin;
 }
 
 // ─── Types ─────────────────────────────────────────────────────────────────
