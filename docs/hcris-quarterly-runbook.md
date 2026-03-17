@@ -13,6 +13,7 @@ CMS publishes HCRIS cost reports as CSV files. Each provider type has its own do
 The scripts accept a directory containing the CSV files and process all years found there.
 
 Each directory contains per-year files:
+
 - `*_rpt.csv` — report metadata (provider, dates, status)
 - `*_nmrc.csv` — numeric worksheet values (the financial data)
 - `*_alpha.csv` — alpha-numeric values (not used)
@@ -24,13 +25,14 @@ Each directory contains per-year files:
 
 Each provider type has its own CMS page. Download the data zip from each:
 
-| Provider Type | Form | URL |
-|---|---|---|
+| Provider Type                  | Form                      | URL                                                                                                                  |
+| ------------------------------ | ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | Skilled Nursing Facility (SNF) | CMS-2540-10 / CMS-2540-24 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/skilled-nursing-facility-2540-2010-form |
-| Home Health Agency (HHA) | CMS-1728-20 | https://www.cms.gov/data-research/statistics-trends-reports/cost-reports/home-health-agency-1728-2020-form |
-| Hospice | CMS-1984-14 | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/hospice-1984-2014-form |
+| Home Health Agency (HHA)       | CMS-1728-20               | https://www.cms.gov/data-research/statistics-trends-reports/cost-reports/home-health-agency-1728-2020-form           |
+| Hospice                        | CMS-1984-14               | https://www.cms.gov/data-research/statistics-trends-and-reports/cost-reports/hospice-1984-2014-form                  |
 
 **What to download:**
+
 - SNF page: look for "SNF 10 Data files zip" or "SNF 24 Data files zip" — annual releases, one year per download. Most providers still file on the older CMS-2540-10 form (files named `SNF10_*`); the newer CMS-2540-24 form (files named `SNF24_*`) is also in use. Both are supported — the scripts try the new-form coordinates first and fall back to the old.
 - HHA page: look for "HHA 20 Data files zip" — annual releases. **Only download files from this page (CMS-1728-20 form, named `HHA20_*`).** The older CMS-1728-94 form files (named `HHA_*`) have an incompatible format and are not supported.
 - Hospice page: look for "Hospice 14 Data files" — a single download covering all years (FY2015–present).
@@ -81,20 +83,24 @@ The scripts extract specific worksheet coordinates from the NMRC files. CMS some
 **SNF — check medicare_payments coordinate:**
 
 The coordinate depends on the form version. Check which you have:
+
 ```bash
 # New form (CMS-2540-24, files named SNF24_*):
 grep -m5 ',E00A18A,01400,00100,' ~/Downloads/hcris/SNF10FY2025/SNF10_2025_nmrc.csv
 # Old form (CMS-2540-10, files named SNF10_*):
 grep -m5 ',E00A181,00300,00100,' ~/Downloads/hcris/SNF10FY2025/SNF10_2025_nmrc.csv
 ```
+
 Expected: several rows with large dollar amounts ($100K–$10M range per provider). The scripts try both automatically.
 
 **HHA — check medicare_payments coordinate (B000000/10000/01000):**
+
 ```bash
 grep -m5 ',B000000,10000,01000,' ~/Downloads/hcris/HHA20FY2025/HHA20_2025_nmrc.csv
 ```
 
 **Hospice — check medicare_payments coordinate (B000000/10100/03A00):**
+
 ```bash
 grep -m5 ',B000000,10100,03A00,' ~/Downloads/hcris/HOSPC14-ALL-YEARS/HOSPC14_2024_nmrc.csv
 ```
@@ -116,16 +122,19 @@ set -a && source .env.local && set +a
 Pass the path to each directory (not an individual file).
 
 **SNF:**
+
 ```bash
 npx tsx scripts/parse-hcris-snf.ts ~/Downloads/hcris/SNF24FY2025
 ```
 
 **HHA:**
+
 ```bash
 npx tsx scripts/parse-hcris-hha.ts ~/Downloads/hcris/HHA20FY2025
 ```
 
 **Hospice:**
+
 ```bash
 npx tsx scripts/parse-hcris-hospice.ts ~/Downloads/hcris/HOSPC14-ALL-YEARS
 ```
@@ -152,6 +161,7 @@ Ingestion complete.
 ```
 
 **What to check:**
+
 - `Providers missing` — CCNs in HCRIS that don't match our database. 1–5% is normal (closed providers, new providers not yet ingested). A large number (>10%) may mean a CCN format mismatch.
 - `Total Medicare revenue` — compare against the prior quarter. A dramatic change warrants investigation.
 - `providers skipped (null pay)` — providers whose highest fiscal year had no extractable payment amount. Investigate if unexpectedly high.

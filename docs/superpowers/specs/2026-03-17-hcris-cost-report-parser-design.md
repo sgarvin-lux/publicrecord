@@ -53,6 +53,7 @@ if (isDirectRun) { main().catch(...) }
 ## Data Source
 
 Raw HCRIS bulk downloads from CMS:
+
 - `cms.gov/data-research/statistics-trends-and-reports/cost-reports/cost-reports-fiscal-year`
 - Separate zip files for SNF (Form CMS-2540-10), HHA (Form CMS-1728-20), and Hospice (Form CMS-1984-14)
 - Each zip contains three **pipe-delimited** (`|`) files joined by `RPT_REC_NUM`:
@@ -67,6 +68,7 @@ Note: cost reports lag ~18 months. This is expected and acceptable.
 ## Data Flow
 
 1. **CLI invocation** — operator passes local zip path:
+
    ```
    npx tsx scripts/parse-hcris-snf.ts ~/downloads/snf_fy2023.zip
    ```
@@ -115,27 +117,27 @@ Coordinates are defined as typed constants in each `transform-hcris-*.ts` file, 
 
 **SNF (CMS-2540-10):**
 
-| Field | WKSHT_CD | LINE_NUM | CLMN_NUM |
-|---|---|---|---|
-| Total Medicare reimbursement | `E` | `1` | `1` |
-| Total submitted charges | `C` | `1` | `8` |
-| Medicare patient days | `S3` | `1` | `6` |
-| Total patient days | `S3` | `1` | `8` |
+| Field                        | WKSHT_CD | LINE_NUM | CLMN_NUM |
+| ---------------------------- | -------- | -------- | -------- |
+| Total Medicare reimbursement | `E`      | `1`      | `1`      |
+| Total submitted charges      | `C`      | `1`      | `8`      |
+| Medicare patient days        | `S3`     | `1`      | `6`      |
+| Total patient days           | `S3`     | `1`      | `8`      |
 
 **HHA (CMS-1728-20):**
 
-| Field | WKSHT_CD | LINE_NUM | CLMN_NUM |
-|---|---|---|---|
-| Total Medicare reimbursement | `E` | `1` | `1` |
-| Total visits | `H1` | `1` | `1` |
-| Total patients | `H1` | `1` | `2` |
+| Field                        | WKSHT_CD | LINE_NUM | CLMN_NUM |
+| ---------------------------- | -------- | -------- | -------- |
+| Total Medicare reimbursement | `E`      | `1`      | `1`      |
+| Total visits                 | `H1`     | `1`      | `1`      |
+| Total patients               | `H1`     | `1`      | `2`      |
 
 **Hospice (CMS-1984-14):**
 
-| Field | WKSHT_CD | LINE_NUM | CLMN_NUM |
-|---|---|---|---|
-| Total Medicare reimbursement | `E` | `1` | `1` |
-| Total patient days (all levels) | `S2` | `1` | `1` |
+| Field                           | WKSHT_CD | LINE_NUM | CLMN_NUM |
+| ------------------------------- | -------- | -------- | -------- |
+| Total Medicare reimbursement    | `E`      | `1`      | `1`      |
+| Total patient days (all levels) | `S2`     | `1`      | `1`      |
 
 ---
 
@@ -144,10 +146,10 @@ Coordinates are defined as typed constants in each `transform-hcris-*.ts` file, 
 ```typescript
 // Intermediate: extracted from HCRIS files, keyed by CCN
 interface PaymentRecord {
-  prvdr_num: string;           // CCN (PRVDR_NUM from RPT file)
-  fiscal_year: number;         // calendar year of FY_END_DT
+  prvdr_num: string; // CCN (PRVDR_NUM from RPT file)
+  fiscal_year: number; // calendar year of FY_END_DT
   medicare_payments: number | null;
-  total_charges: number | null;  // SNF only; null for HHA and Hospice
+  total_charges: number | null; // SNF only; null for HHA and Hospice
   total_days: number | null;
   total_patients: number | null; // HHA only; null for SNF and Hospice
   // Note: HHA total_visits is extracted for operational logging only;
@@ -156,13 +158,13 @@ interface PaymentRecord {
 
 // Final: ready to upsert into payment_history
 interface PaymentHistoryRow {
-  provider_id: string;         // UUID from providers table
+  provider_id: string; // UUID from providers table
   fiscal_year: number;
   medicare_payments: number | null;
   total_charges: number | null;
   total_days: number | null;
   total_patients: number | null;
-  data_source: 'hcris';
+  data_source: "hcris";
 }
 ```
 
@@ -182,13 +184,13 @@ charge_to_payment_ratio = total_charges / medicare_payments
 
 ## Error Handling
 
-| Scenario | Behavior |
-|---|---|
-| Provider CCN not found in `providers` table | Log warning with CCN, increment missing count, continue |
-| Expected NMRC coordinate absent for a report | Set field to `null`, continue |
-| Zero rows upserted after full run | Exit with code 1 (matches existing script convention) |
-| Upsert error from Supabase | Throw, halt run immediately |
-| Zip extraction or CSV parse failure | Throw, halt run; temp dir cleaned up in `finally` |
+| Scenario                                     | Behavior                                                |
+| -------------------------------------------- | ------------------------------------------------------- |
+| Provider CCN not found in `providers` table  | Log warning with CCN, increment missing count, continue |
+| Expected NMRC coordinate absent for a report | Set field to `null`, continue                           |
+| Zero rows upserted after full run            | Exit with code 1 (matches existing script convention)   |
+| Upsert error from Supabase                   | Throw, halt run immediately                             |
+| Zip extraction or CSV parse failure          | Throw, halt run; temp dir cleaned up in `finally`       |
 
 ---
 

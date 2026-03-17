@@ -9,7 +9,7 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
  */
 const COORDS = {
   medicare_payments: { wksht: "B000000", line: "10100", col: "03A00" },
-  total_days:        { wksht: "S100000", line: "03100", col: "00100" },
+  total_days: { wksht: "S100000", line: "03100", col: "00100" },
 } as const;
 
 /**
@@ -30,7 +30,7 @@ export function transformHospice(
       COORDS.medicare_payments.line,
       COORDS.medicare_payments.col,
     ),
-    total_charges: null,  // Hospice does not extract total_charges
+    total_charges: null, // Hospice does not extract total_charges
     total_days: lookupValue(
       nmrcGroup,
       COORDS.total_days.wksht,

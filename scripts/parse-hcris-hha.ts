@@ -17,7 +17,9 @@ import { transformHha } from "./lib/transform-hcris-hha";
 export async function main() {
   const dir = process.argv[2];
   if (!dir) {
-    console.error("Usage: npx tsx scripts/parse-hcris-hha.ts <path-to-directory>");
+    console.error(
+      "Usage: npx tsx scripts/parse-hcris-hha.ts <path-to-directory>",
+    );
     process.exit(1);
   }
 
@@ -41,7 +43,9 @@ export async function main() {
     console.log(`  Loaded ${rptRows.length} RPT rows`);
 
     const selectedReports = selectBestReports(rptRows);
-    console.log(`  Selected ${selectedReports.size} reports (best per provider-year)`);
+    console.log(
+      `  Selected ${selectedReports.size} reports (best per provider-year)`,
+    );
 
     const nmrcRows = await parseHcrisFile(nmrcPath, NMRC_COLS);
     console.log(`  Loaded ${nmrcRows.length} NMRC rows`);
@@ -108,7 +112,9 @@ export async function main() {
   console.log(`\nUpdating ${providerUpdates.length} providers...`);
   const providersUpdated = await updateProviders(providerUpdates);
 
-  const fiscalYears = [...new Set(paymentRecords.map((r) => r.fiscal_year))].sort();
+  const fiscalYears = [
+    ...new Set(paymentRecords.map((r) => r.fiscal_year)),
+  ].sort();
   const totalRevenue = paymentRecords
     .filter((r) => r.medicare_payments !== null)
     .reduce((sum, r) => sum + r.medicare_payments!, 0);
@@ -116,8 +122,12 @@ export async function main() {
   console.log("\n--- HCRIS HHA Ingestion Summary ---");
   console.log(`Fiscal years found:            ${fiscalYears.join(", ")}`);
   console.log(`Reports processed:             ${paymentRecords.length}`);
-  console.log(`Providers matched:             ${providerMap.size}  (found in DB)`);
-  console.log(`Providers missing:             ${missingCcns.length}  (CCN not found)`);
+  console.log(
+    `Providers matched:             ${providerMap.size}  (found in DB)`,
+  );
+  console.log(
+    `Providers missing:             ${missingCcns.length}  (CCN not found)`,
+  );
   console.log(`payment_history rows upserted: ${upserted}`);
   console.log(`providers updated:             ${providersUpdated}`);
   if (skippedCcns.length > 0) {

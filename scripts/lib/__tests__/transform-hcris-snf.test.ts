@@ -11,9 +11,27 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "100", WKSHT_CD: "E00A18A", LINE_NUM: "01400", CLMN_NUM: "00100", ITM_VAL_NUM: "500000" },
-  { RPT_REC_NUM: "100", WKSHT_CD: "C000000", LINE_NUM: "02500", CLMN_NUM: "00100", ITM_VAL_NUM: "750000" },
-  { RPT_REC_NUM: "100", WKSHT_CD: "S300001", LINE_NUM: "00100", CLMN_NUM: "00200", ITM_VAL_NUM: "12000" },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "E00A18A",
+    LINE_NUM: "01400",
+    CLMN_NUM: "00100",
+    ITM_VAL_NUM: "500000",
+  },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "C000000",
+    LINE_NUM: "02500",
+    CLMN_NUM: "00100",
+    ITM_VAL_NUM: "750000",
+  },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "S300001",
+    LINE_NUM: "00100",
+    CLMN_NUM: "00200",
+    ITM_VAL_NUM: "12000",
+  },
 ];
 
 describe("transformSnf", () => {
@@ -43,7 +61,13 @@ describe("transformSnf", () => {
 
   it("handles decimal NMRC values", () => {
     const nmrc = [
-      { RPT_REC_NUM: "100", WKSHT_CD: "E00A18A", LINE_NUM: "01400", CLMN_NUM: "00100", ITM_VAL_NUM: "500000.75" },
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "E00A18A",
+        LINE_NUM: "01400",
+        CLMN_NUM: "00100",
+        ITM_VAL_NUM: "500000.75",
+      },
     ];
     const result = transformSnf(rptRow, nmrc);
     expect(result.medicare_payments).toBe(500000.75);

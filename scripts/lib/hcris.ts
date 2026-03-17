@@ -51,11 +51,24 @@ export interface ProviderUpdate {
  * Standard HCRIS cost report RPT file format.
  */
 export const RPT_COLS = [
-  "RPT_REC_NUM", "PRVDR_CTRL_TYPE_CD", "PRVDR_NUM", "NPI",
-  "RPT_STUS_CD", "FY_BGN_DT", "FY_END_DT", "PROC_DT",
-  "INITL_RPT_SW", "LAST_RPT_SW", "TRNSMTL_NUM", "FI_NUM",
-  "ADR_VNDR_CD", "FI_CREAT_DT", "UTIL_CD", "NPR_DT",
-  "SPEC_IND", "INITL_RPT_DT",
+  "RPT_REC_NUM",
+  "PRVDR_CTRL_TYPE_CD",
+  "PRVDR_NUM",
+  "NPI",
+  "RPT_STUS_CD",
+  "FY_BGN_DT",
+  "FY_END_DT",
+  "PROC_DT",
+  "INITL_RPT_SW",
+  "LAST_RPT_SW",
+  "TRNSMTL_NUM",
+  "FI_NUM",
+  "ADR_VNDR_CD",
+  "FI_CREAT_DT",
+  "UTIL_CD",
+  "NPR_DT",
+  "SPEC_IND",
+  "INITL_RPT_DT",
 ] as const;
 
 /**
@@ -63,7 +76,11 @@ export const RPT_COLS = [
  * Standard HCRIS cost report NMRC file format.
  */
 export const NMRC_COLS = [
-  "RPT_REC_NUM", "WKSHT_CD", "LINE_NUM", "CLMN_NUM", "ITM_VAL_NUM",
+  "RPT_REC_NUM",
+  "WKSHT_CD",
+  "LINE_NUM",
+  "CLMN_NUM",
+  "ITM_VAL_NUM",
 ] as const;
 
 /**
@@ -106,8 +123,12 @@ export function findRptNmrcPairs(
 
   const pairs: Array<{ rpt: string; nmrc: string }> = [];
   for (const rptFile of rptFiles) {
-    const nmrcFile = rptFile.replace(/_rpt\.csv$/i, "_nmrc.csv");
-    if (files.includes(nmrcFile)) {
+    const nmrcPattern = new RegExp(
+      rptFile.replace(/_rpt\.csv$/i, "_nmrc.csv"),
+      "i",
+    );
+    const nmrcFile = files.find((f) => nmrcPattern.test(f));
+    if (nmrcFile) {
       pairs.push({
         rpt: path.join(dir, rptFile),
         nmrc: path.join(dir, nmrcFile),
@@ -389,8 +410,7 @@ export async function updateProviders(
             updated_at: new Date().toISOString(),
           })
           .eq("id", u.provider_id);
-        if (error)
-          throw new Error(`Provider update failed: ${error.message}`);
+        if (error) throw new Error(`Provider update failed: ${error.message}`);
       }),
     );
     total += batch.length;

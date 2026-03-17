@@ -11,9 +11,27 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "200", WKSHT_CD: "B000000", LINE_NUM: "10000", CLMN_NUM: "01000", ITM_VAL_NUM: "300000" },
-  { RPT_REC_NUM: "200", WKSHT_CD: "S300004", LINE_NUM: "00200", CLMN_NUM: "00500", ITM_VAL_NUM: "5200" },
-  { RPT_REC_NUM: "200", WKSHT_CD: "S300004", LINE_NUM: "00100", CLMN_NUM: "00500", ITM_VAL_NUM: "420" },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "B000000",
+    LINE_NUM: "10000",
+    CLMN_NUM: "01000",
+    ITM_VAL_NUM: "300000",
+  },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "S300004",
+    LINE_NUM: "00200",
+    CLMN_NUM: "00500",
+    ITM_VAL_NUM: "5200",
+  },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "S300004",
+    LINE_NUM: "00100",
+    CLMN_NUM: "00500",
+    ITM_VAL_NUM: "420",
+  },
 ];
 
 describe("transformHha", () => {

@@ -14,9 +14,9 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
 const COORDS = {
   medicare_payments_new: { wksht: "E00A18A", line: "01400", col: "00100" },
   medicare_payments_old: { wksht: "E00A181", line: "00300", col: "00100" },
-  total_charges_new:     { wksht: "C000000", line: "02500", col: "00100" },
-  total_charges_old:     { wksht: "C000000", line: "10000", col: "00200" },
-  total_days:            { wksht: "S300001", line: "00100", col: "00200" },
+  total_charges_new: { wksht: "C000000", line: "02500", col: "00100" },
+  total_charges_old: { wksht: "C000000", line: "10000", col: "00200" },
+  total_days: { wksht: "S300001", line: "00100", col: "00200" },
 } as const;
 
 /**
@@ -32,11 +32,31 @@ export function transformSnf(
     prvdr_num: rptRow.PRVDR_NUM,
     fiscal_year: parseFiscalYear(rptRow.FY_END_DT) ?? 0,
     medicare_payments:
-      lookupValue(nmrcGroup, COORDS.medicare_payments_new.wksht, COORDS.medicare_payments_new.line, COORDS.medicare_payments_new.col) ??
-      lookupValue(nmrcGroup, COORDS.medicare_payments_old.wksht, COORDS.medicare_payments_old.line, COORDS.medicare_payments_old.col),
+      lookupValue(
+        nmrcGroup,
+        COORDS.medicare_payments_new.wksht,
+        COORDS.medicare_payments_new.line,
+        COORDS.medicare_payments_new.col,
+      ) ??
+      lookupValue(
+        nmrcGroup,
+        COORDS.medicare_payments_old.wksht,
+        COORDS.medicare_payments_old.line,
+        COORDS.medicare_payments_old.col,
+      ),
     total_charges:
-      lookupValue(nmrcGroup, COORDS.total_charges_new.wksht, COORDS.total_charges_new.line, COORDS.total_charges_new.col) ??
-      lookupValue(nmrcGroup, COORDS.total_charges_old.wksht, COORDS.total_charges_old.line, COORDS.total_charges_old.col),
+      lookupValue(
+        nmrcGroup,
+        COORDS.total_charges_new.wksht,
+        COORDS.total_charges_new.line,
+        COORDS.total_charges_new.col,
+      ) ??
+      lookupValue(
+        nmrcGroup,
+        COORDS.total_charges_old.wksht,
+        COORDS.total_charges_old.line,
+        COORDS.total_charges_old.col,
+      ),
     total_days: lookupValue(
       nmrcGroup,
       COORDS.total_days.wksht,

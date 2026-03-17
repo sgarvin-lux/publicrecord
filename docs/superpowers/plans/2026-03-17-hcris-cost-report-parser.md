@@ -12,21 +12,21 @@
 
 ## File Map
 
-| File | Action | Responsibility |
-|---|---|---|
-| `scripts/lib/hcris.ts` | Create | Zip extraction, pipe-delimited parsing, RPT loading, report selection, NMRC grouping, coordinate lookup, CCN resolution, upsert/update helpers, `buildProviderUpdates` |
-| `scripts/lib/transform-hcris-snf.ts` | Create | SNF worksheet coordinates + field extraction |
-| `scripts/lib/transform-hcris-hha.ts` | Create | HHA worksheet coordinates + field extraction |
-| `scripts/lib/transform-hcris-hospice.ts` | Create | Hospice worksheet coordinates + field extraction |
-| `scripts/lib/__tests__/hcris.test.ts` | Create | Tests for all shared logic |
-| `scripts/lib/__tests__/transform-hcris-snf.test.ts` | Create | Tests for SNF transform |
-| `scripts/lib/__tests__/transform-hcris-hha.test.ts` | Create | Tests for HHA transform |
-| `scripts/lib/__tests__/transform-hcris-hospice.test.ts` | Create | Tests for Hospice transform |
-| `scripts/parse-hcris-snf.ts` | Create | SNF entrypoint |
-| `scripts/parse-hcris-hha.ts` | Create | HHA entrypoint |
-| `scripts/parse-hcris-hospice.ts` | Create | Hospice entrypoint |
-| `docs/hcris-quarterly-runbook.md` | Create | Operator instructions |
-| `package.json` | Modify | Add `adm-zip` dev dependency |
+| File                                                    | Action | Responsibility                                                                                                                                                         |
+| ------------------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/lib/hcris.ts`                                  | Create | Zip extraction, pipe-delimited parsing, RPT loading, report selection, NMRC grouping, coordinate lookup, CCN resolution, upsert/update helpers, `buildProviderUpdates` |
+| `scripts/lib/transform-hcris-snf.ts`                    | Create | SNF worksheet coordinates + field extraction                                                                                                                           |
+| `scripts/lib/transform-hcris-hha.ts`                    | Create | HHA worksheet coordinates + field extraction                                                                                                                           |
+| `scripts/lib/transform-hcris-hospice.ts`                | Create | Hospice worksheet coordinates + field extraction                                                                                                                       |
+| `scripts/lib/__tests__/hcris.test.ts`                   | Create | Tests for all shared logic                                                                                                                                             |
+| `scripts/lib/__tests__/transform-hcris-snf.test.ts`     | Create | Tests for SNF transform                                                                                                                                                |
+| `scripts/lib/__tests__/transform-hcris-hha.test.ts`     | Create | Tests for HHA transform                                                                                                                                                |
+| `scripts/lib/__tests__/transform-hcris-hospice.test.ts` | Create | Tests for Hospice transform                                                                                                                                            |
+| `scripts/parse-hcris-snf.ts`                            | Create | SNF entrypoint                                                                                                                                                         |
+| `scripts/parse-hcris-hha.ts`                            | Create | HHA entrypoint                                                                                                                                                         |
+| `scripts/parse-hcris-hospice.ts`                        | Create | Hospice entrypoint                                                                                                                                                     |
+| `docs/hcris-quarterly-runbook.md`                       | Create | Operator instructions                                                                                                                                                  |
+| `package.json`                                          | Modify | Add `adm-zip` dev dependency                                                                                                                                           |
 
 ---
 
@@ -35,6 +35,7 @@
 ### Task 1: Add `adm-zip` dependency
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Install adm-zip**
@@ -57,6 +58,7 @@ git commit -m "chore: add adm-zip for HCRIS zip extraction"
 ### Task 2: Write failing tests for shared `hcris.ts` logic
 
 **Files:**
+
 - Create: `scripts/lib/__tests__/hcris.test.ts`
 
 Do NOT create `hcris.ts` yet — the goal of this step is to write tests that fail because the module doesn't exist.
@@ -103,13 +105,25 @@ describe("parseFiscalYear", () => {
 
 describe("findFileBySuffix", () => {
   it("finds a file whose name contains the suffix (case-insensitive)", () => {
-    const mockFiles = ["SNF_2023_RPT_ABC.csv", "SNF_2023_NMRC_DEF.csv", "SNF_2023_ALPHNMRC_GHI.csv"];
-    vi.spyOn(require("fs"), "readdirSync").mockReturnValueOnce(mockFiles as any);
-    vi.spyOn(require("path"), "join").mockImplementation((...args) => args.join("/"));
+    const mockFiles = [
+      "SNF_2023_RPT_ABC.csv",
+      "SNF_2023_NMRC_DEF.csv",
+      "SNF_2023_ALPHNMRC_GHI.csv",
+    ];
+    vi.spyOn(require("fs"), "readdirSync").mockReturnValueOnce(
+      mockFiles as any,
+    );
+    vi.spyOn(require("path"), "join").mockImplementation((...args) =>
+      args.join("/"),
+    );
     // We test the pure logic by calling with a real temp dir in integration;
     // here we verify the suffix match is case-insensitive
-    expect(mockFiles.find((f) => f.toUpperCase().includes("_RPT_"))).toBe("SNF_2023_RPT_ABC.csv");
-    expect(mockFiles.find((f) => f.toUpperCase().includes("_NMRC_"))).toBe("SNF_2023_NMRC_DEF.csv");
+    expect(mockFiles.find((f) => f.toUpperCase().includes("_RPT_"))).toBe(
+      "SNF_2023_RPT_ABC.csv",
+    );
+    expect(mockFiles.find((f) => f.toUpperCase().includes("_NMRC_"))).toBe(
+      "SNF_2023_NMRC_DEF.csv",
+    );
   });
 
   it("throws if no file matches the suffix", () => {
@@ -125,8 +139,20 @@ describe("findFileBySuffix", () => {
 describe("selectBestReports", () => {
   it("prefers settled (status 2) over as-submitted (status 1) for same provider-year", () => {
     const rows = [
-      { RPT_REC_NUM: "100", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "1" },
-      { RPT_REC_NUM: "101", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
+      {
+        RPT_REC_NUM: "100",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "1",
+      },
+      {
+        RPT_REC_NUM: "101",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.has("101")).toBe(true);
@@ -135,8 +161,20 @@ describe("selectBestReports", () => {
 
   it("prefers amended/settled (status 4) over as-submitted (status 1)", () => {
     const rows = [
-      { RPT_REC_NUM: "200", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "1" },
-      { RPT_REC_NUM: "201", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "4" },
+      {
+        RPT_REC_NUM: "200",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "1",
+      },
+      {
+        RPT_REC_NUM: "201",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "4",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.has("201")).toBe(true);
@@ -145,8 +183,20 @@ describe("selectBestReports", () => {
 
   it("treats status 2 and status 4 as equal priority, breaking ties by PROC_DT", () => {
     const rows = [
-      { RPT_REC_NUM: "300", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "301", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "06/01/2024", RPT_STUS_CD: "4" },
+      {
+        RPT_REC_NUM: "300",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "301",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "06/01/2024",
+        RPT_STUS_CD: "4",
+      },
     ];
     const result = selectBestReports(rows);
     // status 2 and 4 are equal priority; 301 has more recent PROC_DT
@@ -156,8 +206,20 @@ describe("selectBestReports", () => {
 
   it("prefers most recent PROC_DT when status is equal", () => {
     const rows = [
-      { RPT_REC_NUM: "400", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "01/15/2024", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "401", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "06/01/2024", RPT_STUS_CD: "2" },
+      {
+        RPT_REC_NUM: "400",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "01/15/2024",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "401",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "06/01/2024",
+        RPT_STUS_CD: "2",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.has("401")).toBe(true);
@@ -166,7 +228,13 @@ describe("selectBestReports", () => {
 
   it("selects the only report even when status=1 (as-submitted) only", () => {
     const rows = [
-      { RPT_REC_NUM: "500", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "1" },
+      {
+        RPT_REC_NUM: "500",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "1",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.has("500")).toBe(true);
@@ -175,8 +243,20 @@ describe("selectBestReports", () => {
   it("logs a warning and picks last-seen when status and PROC_DT are both equal (degenerate case)", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const rows = [
-      { RPT_REC_NUM: "600", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "601", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
+      {
+        RPT_REC_NUM: "600",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "601",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.has("601")).toBe(true); // last-seen wins
@@ -187,8 +267,20 @@ describe("selectBestReports", () => {
 
   it("handles multiple providers independently", () => {
     const rows = [
-      { RPT_REC_NUM: "700", PRVDR_NUM: "111111", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "701", PRVDR_NUM: "222222", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "1" },
+      {
+        RPT_REC_NUM: "700",
+        PRVDR_NUM: "111111",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "701",
+        PRVDR_NUM: "222222",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "1",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.size).toBe(2);
@@ -196,8 +288,20 @@ describe("selectBestReports", () => {
 
   it("handles multiple fiscal years for the same provider independently", () => {
     const rows = [
-      { RPT_REC_NUM: "800", PRVDR_NUM: "012345", FY_END_DT: "12/31/2022", PROC_DT: "03/01/2023", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "801", PRVDR_NUM: "012345", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
+      {
+        RPT_REC_NUM: "800",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2022",
+        PROC_DT: "03/01/2023",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "801",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.size).toBe(2);
@@ -205,8 +309,20 @@ describe("selectBestReports", () => {
 
   it("skips rows with missing PRVDR_NUM or unparseable FY_END_DT", () => {
     const rows = [
-      { RPT_REC_NUM: "900", PRVDR_NUM: "", FY_END_DT: "12/31/2023", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
-      { RPT_REC_NUM: "901", PRVDR_NUM: "012345", FY_END_DT: "2023-12-31", PROC_DT: "03/01/2024", RPT_STUS_CD: "2" },
+      {
+        RPT_REC_NUM: "900",
+        PRVDR_NUM: "",
+        FY_END_DT: "12/31/2023",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
+      {
+        RPT_REC_NUM: "901",
+        PRVDR_NUM: "012345",
+        FY_END_DT: "2023-12-31",
+        PROC_DT: "03/01/2024",
+        RPT_STUS_CD: "2",
+      },
     ];
     const result = selectBestReports(rows);
     expect(result.size).toBe(0);
@@ -218,9 +334,27 @@ describe("selectBestReports", () => {
 describe("groupNmrcByRptRecNum", () => {
   it("groups NMRC rows by RPT_REC_NUM, filtering to selected set", () => {
     const nmrcRows = [
-      { RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "500000" },
-      { RPT_REC_NUM: "100", WKSHT_CD: "C", LINE_NUM: "1", CLMN_NUM: "8", ITM_VAL_NUM: "750000" },
-      { RPT_REC_NUM: "999", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "100000" },
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "E",
+        LINE_NUM: "1",
+        CLMN_NUM: "1",
+        ITM_VAL_NUM: "500000",
+      },
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "C",
+        LINE_NUM: "1",
+        CLMN_NUM: "8",
+        ITM_VAL_NUM: "750000",
+      },
+      {
+        RPT_REC_NUM: "999",
+        WKSHT_CD: "E",
+        LINE_NUM: "1",
+        CLMN_NUM: "1",
+        ITM_VAL_NUM: "100000",
+      },
     ];
     const selected = new Set(["100"]);
     const result = groupNmrcByRptRecNum(nmrcRows, selected);
@@ -233,8 +367,20 @@ describe("groupNmrcByRptRecNum", () => {
 
 describe("lookupValue", () => {
   const nmrcGroup = [
-    { RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "500000.50" },
-    { RPT_REC_NUM: "100", WKSHT_CD: "C", LINE_NUM: "1", CLMN_NUM: "8", ITM_VAL_NUM: "750000" },
+    {
+      RPT_REC_NUM: "100",
+      WKSHT_CD: "E",
+      LINE_NUM: "1",
+      CLMN_NUM: "1",
+      ITM_VAL_NUM: "500000.50",
+    },
+    {
+      RPT_REC_NUM: "100",
+      WKSHT_CD: "C",
+      LINE_NUM: "1",
+      CLMN_NUM: "8",
+      ITM_VAL_NUM: "750000",
+    },
   ];
 
   it("returns the numeric value for a matching coordinate", () => {
@@ -246,13 +392,29 @@ describe("lookupValue", () => {
   });
 
   it("returns null for non-numeric ITM_VAL_NUM", () => {
-    const group = [{ RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "N/A" }];
+    const group = [
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "E",
+        LINE_NUM: "1",
+        CLMN_NUM: "1",
+        ITM_VAL_NUM: "N/A",
+      },
+    ];
     expect(lookupValue(group, "E", "1", "1")).toBeNull();
   });
 
   it("matches coordinates that have been whitespace-trimmed", () => {
     // HCRIS pipe-delimited files often have padded fields; parsePipeDelimited trims them
-    const group = [{ RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "  99999  " }];
+    const group = [
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "E",
+        LINE_NUM: "1",
+        CLMN_NUM: "1",
+        ITM_VAL_NUM: "  99999  ",
+      },
+    ];
     // After trim, ITM_VAL_NUM is "99999" — parseFloat handles that
     expect(lookupValue(group, "E", "1", "1")).toBe(99999);
   });
@@ -300,8 +462,22 @@ describe("buildProviderUpdates", () => {
 
   it("picks the highest fiscal year per provider", () => {
     const records = [
-      { prvdr_num: "012345", fiscal_year: 2022, medicare_payments: 400000, total_charges: 600000, total_days: 10000, total_patients: null },
-      { prvdr_num: "012345", fiscal_year: 2023, medicare_payments: 500000, total_charges: 750000, total_days: 11000, total_patients: null },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2022,
+        medicare_payments: 400000,
+        total_charges: 600000,
+        total_days: 10000,
+        total_patients: null,
+      },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2023,
+        medicare_payments: 500000,
+        total_charges: 750000,
+        total_days: 11000,
+        total_patients: null,
+      },
     ];
     const { updates } = buildProviderUpdates(records, providerMap);
     expect(updates).toHaveLength(1);
@@ -311,7 +487,14 @@ describe("buildProviderUpdates", () => {
 
   it("skips providers whose highest fiscal year has null medicare_payments", () => {
     const records = [
-      { prvdr_num: "012345", fiscal_year: 2023, medicare_payments: null, total_charges: null, total_days: null, total_patients: null },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2023,
+        medicare_payments: null,
+        total_charges: null,
+        total_days: null,
+        total_patients: null,
+      },
     ];
     const { updates, skippedCcns } = buildProviderUpdates(records, providerMap);
     expect(updates).toHaveLength(0);
@@ -320,7 +503,14 @@ describe("buildProviderUpdates", () => {
 
   it("skips CCNs that are not in providerMap (already counted as missing)", () => {
     const records = [
-      { prvdr_num: "999999", fiscal_year: 2023, medicare_payments: 100000, total_charges: null, total_days: null, total_patients: null },
+      {
+        prvdr_num: "999999",
+        fiscal_year: 2023,
+        medicare_payments: 100000,
+        total_charges: null,
+        total_days: null,
+        total_patients: null,
+      },
     ];
     const { updates } = buildProviderUpdates(records, providerMap);
     expect(updates).toHaveLength(0);
@@ -328,7 +518,14 @@ describe("buildProviderUpdates", () => {
 
   it("computes charge_to_payment_ratio correctly", () => {
     const records = [
-      { prvdr_num: "012345", fiscal_year: 2023, medicare_payments: 500000, total_charges: 750000, total_days: null, total_patients: null },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2023,
+        medicare_payments: 500000,
+        total_charges: 750000,
+        total_days: null,
+        total_patients: null,
+      },
     ];
     const { updates } = buildProviderUpdates(records, providerMap);
     expect(updates[0].charge_to_payment_ratio).toBe(1.5);
@@ -336,7 +533,14 @@ describe("buildProviderUpdates", () => {
 
   it("sets charge_to_payment_ratio to null when total_charges is null (HHA/Hospice)", () => {
     const records = [
-      { prvdr_num: "012345", fiscal_year: 2023, medicare_payments: 500000, total_charges: null, total_days: null, total_patients: null },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2023,
+        medicare_payments: 500000,
+        total_charges: null,
+        total_days: null,
+        total_patients: null,
+      },
     ];
     const { updates } = buildProviderUpdates(records, providerMap);
     expect(updates[0].charge_to_payment_ratio).toBeNull();
@@ -344,7 +548,14 @@ describe("buildProviderUpdates", () => {
 
   it("sets data_source to 'hcris'", () => {
     const records = [
-      { prvdr_num: "012345", fiscal_year: 2023, medicare_payments: 500000, total_charges: null, total_days: null, total_patients: null },
+      {
+        prvdr_num: "012345",
+        fiscal_year: 2023,
+        medicare_payments: 500000,
+        total_charges: null,
+        total_days: null,
+        total_patients: null,
+      },
     ];
     const { updates } = buildProviderUpdates(records, providerMap);
     expect(updates[0].payment_data_source).toBe("hcris");
@@ -372,6 +583,7 @@ git commit -m "test: add failing tests for hcris shared library"
 ### Task 3: Implement `scripts/lib/hcris.ts`
 
 **Files:**
+
 - Create: `scripts/lib/hcris.ts`
 
 - [ ] **Step 1: Create the file**
@@ -740,8 +952,7 @@ export async function updateProviders(
             updated_at: new Date().toISOString(),
           })
           .eq("id", u.provider_id);
-        if (error)
-          throw new Error(`Provider update failed: ${error.message}`);
+        if (error) throw new Error(`Provider update failed: ${error.message}`);
       }),
     );
     total += batch.length;
@@ -772,6 +983,7 @@ git commit -m "feat: add hcris shared library (zip, CSV, report selection, upser
 ### Task 4: SNF transform + tests
 
 **Files:**
+
 - Create: `scripts/lib/__tests__/transform-hcris-snf.test.ts`
 - Create: `scripts/lib/transform-hcris-snf.ts`
 
@@ -791,10 +1003,34 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "500000" },
-  { RPT_REC_NUM: "100", WKSHT_CD: "C", LINE_NUM: "1", CLMN_NUM: "8", ITM_VAL_NUM: "750000" },
-  { RPT_REC_NUM: "100", WKSHT_CD: "S3", LINE_NUM: "1", CLMN_NUM: "6", ITM_VAL_NUM: "8500" },
-  { RPT_REC_NUM: "100", WKSHT_CD: "S3", LINE_NUM: "1", CLMN_NUM: "8", ITM_VAL_NUM: "12000" },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "E",
+    LINE_NUM: "1",
+    CLMN_NUM: "1",
+    ITM_VAL_NUM: "500000",
+  },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "C",
+    LINE_NUM: "1",
+    CLMN_NUM: "8",
+    ITM_VAL_NUM: "750000",
+  },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "S3",
+    LINE_NUM: "1",
+    CLMN_NUM: "6",
+    ITM_VAL_NUM: "8500",
+  },
+  {
+    RPT_REC_NUM: "100",
+    WKSHT_CD: "S3",
+    LINE_NUM: "1",
+    CLMN_NUM: "8",
+    ITM_VAL_NUM: "12000",
+  },
 ];
 
 describe("transformSnf", () => {
@@ -824,7 +1060,13 @@ describe("transformSnf", () => {
 
   it("handles decimal NMRC values", () => {
     const nmrc = [
-      { RPT_REC_NUM: "100", WKSHT_CD: "E", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "500000.75" },
+      {
+        RPT_REC_NUM: "100",
+        WKSHT_CD: "E",
+        LINE_NUM: "1",
+        CLMN_NUM: "1",
+        ITM_VAL_NUM: "500000.75",
+      },
     ];
     const result = transformSnf(rptRow, nmrc);
     expect(result.medicare_payments).toBe(500000.75);
@@ -854,9 +1096,9 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
  */
 const COORDS = {
   medicare_payments: { wksht: "E", line: "1", col: "1" },
-  total_charges:     { wksht: "C", line: "1", col: "8" },
-  medicare_days:     { wksht: "S3", line: "1", col: "6" },
-  total_days:        { wksht: "S3", line: "1", col: "8" },
+  total_charges: { wksht: "C", line: "1", col: "8" },
+  medicare_days: { wksht: "S3", line: "1", col: "6" },
+  total_days: { wksht: "S3", line: "1", col: "8" },
 } as const;
 
 /**
@@ -914,6 +1156,7 @@ git commit -m "feat: add SNF HCRIS transform"
 ### Task 5: HHA transform + tests
 
 **Files:**
+
 - Create: `scripts/lib/__tests__/transform-hcris-hha.test.ts`
 - Create: `scripts/lib/transform-hcris-hha.ts`
 
@@ -933,9 +1176,27 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "200", WKSHT_CD: "E",  LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "300000" },
-  { RPT_REC_NUM: "200", WKSHT_CD: "H1", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "5200" },
-  { RPT_REC_NUM: "200", WKSHT_CD: "H1", LINE_NUM: "1", CLMN_NUM: "2", ITM_VAL_NUM: "420" },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "E",
+    LINE_NUM: "1",
+    CLMN_NUM: "1",
+    ITM_VAL_NUM: "300000",
+  },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "H1",
+    LINE_NUM: "1",
+    CLMN_NUM: "1",
+    ITM_VAL_NUM: "5200",
+  },
+  {
+    RPT_REC_NUM: "200",
+    WKSHT_CD: "H1",
+    LINE_NUM: "1",
+    CLMN_NUM: "2",
+    ITM_VAL_NUM: "420",
+  },
 ];
 
 describe("transformHha", () => {
@@ -991,9 +1252,9 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
  * See runbook for verification steps.
  */
 const COORDS = {
-  medicare_payments: { wksht: "E",  line: "1", col: "1" },
-  total_visits:      { wksht: "H1", line: "1", col: "1" },
-  total_patients:    { wksht: "H1", line: "1", col: "2" },
+  medicare_payments: { wksht: "E", line: "1", col: "1" },
+  total_visits: { wksht: "H1", line: "1", col: "1" },
+  total_patients: { wksht: "H1", line: "1", col: "2" },
 } as const;
 
 export interface HhaPaymentRecord extends PaymentRecord {
@@ -1020,7 +1281,7 @@ export function transformHha(
       COORDS.medicare_payments.col,
     ),
     total_charges: null, // HHA does not extract total_charges
-    total_days: null,    // HHA does not extract total_days
+    total_days: null, // HHA does not extract total_days
     total_patients: lookupValue(
       nmrcGroup,
       COORDS.total_patients.wksht,
@@ -1057,6 +1318,7 @@ git commit -m "feat: add HHA HCRIS transform"
 ### Task 6: Hospice transform + tests
 
 **Files:**
+
 - Create: `scripts/lib/__tests__/transform-hcris-hospice.test.ts`
 - Create: `scripts/lib/transform-hcris-hospice.ts`
 
@@ -1076,8 +1338,20 @@ const rptRow = {
 };
 
 const fullNmrc = [
-  { RPT_REC_NUM: "300", WKSHT_CD: "E",  LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "800000" },
-  { RPT_REC_NUM: "300", WKSHT_CD: "S2", LINE_NUM: "1", CLMN_NUM: "1", ITM_VAL_NUM: "45000" },
+  {
+    RPT_REC_NUM: "300",
+    WKSHT_CD: "E",
+    LINE_NUM: "1",
+    CLMN_NUM: "1",
+    ITM_VAL_NUM: "800000",
+  },
+  {
+    RPT_REC_NUM: "300",
+    WKSHT_CD: "S2",
+    LINE_NUM: "1",
+    CLMN_NUM: "1",
+    ITM_VAL_NUM: "45000",
+  },
 ];
 
 describe("transformHospice", () => {
@@ -1127,8 +1401,8 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
  * See runbook for verification steps.
  */
 const COORDS = {
-  medicare_payments: { wksht: "E",  line: "1", col: "1" },
-  total_days:        { wksht: "S2", line: "1", col: "1" },
+  medicare_payments: { wksht: "E", line: "1", col: "1" },
+  total_days: { wksht: "S2", line: "1", col: "1" },
 } as const;
 
 /**
@@ -1149,7 +1423,7 @@ export function transformHospice(
       COORDS.medicare_payments.line,
       COORDS.medicare_payments.col,
     ),
-    total_charges: null,  // Hospice does not extract total_charges
+    total_charges: null, // Hospice does not extract total_charges
     total_days: lookupValue(
       nmrcGroup,
       COORDS.total_days.wksht,
@@ -1193,6 +1467,7 @@ The three entrypoints share identical structure. `buildProviderUpdates` is calle
 ### Task 7: SNF entrypoint script
 
 **Files:**
+
 - Create: `scripts/parse-hcris-snf.ts`
 
 - [ ] **Step 1: Create the file**
@@ -1234,7 +1509,9 @@ export async function main() {
     console.log(`  Loaded ${rptRows.length} RPT rows`);
 
     const selectedReports = selectBestReports(rptRows);
-    console.log(`  Selected ${selectedReports.size} reports (best per provider-year)`);
+    console.log(
+      `  Selected ${selectedReports.size} reports (best per provider-year)`,
+    );
 
     console.log("Loading NMRC file...");
     const nmrcPath = findFileBySuffix(tempDir, "_NMRC_");
@@ -1259,7 +1536,9 @@ export async function main() {
       console.warn(
         `${missingCcns.length} CCNs not found in providers table:`,
         missingCcns.slice(0, 10).join(", "),
-        missingCcns.length > 10 ? `... and ${missingCcns.length - 10} more` : "",
+        missingCcns.length > 10
+          ? `... and ${missingCcns.length - 10} more`
+          : "",
       );
     }
 
@@ -1299,7 +1578,9 @@ export async function main() {
     console.log(`\nUpdating ${providerUpdates.length} providers...`);
     const providersUpdated = await updateProviders(providerUpdates);
 
-    const fiscalYears = [...new Set(paymentRecords.map((r) => r.fiscal_year))].sort();
+    const fiscalYears = [
+      ...new Set(paymentRecords.map((r) => r.fiscal_year)),
+    ].sort();
     const totalRevenue = paymentRecords
       .filter((r) => r.medicare_payments !== null)
       .reduce((sum, r) => sum + r.medicare_payments!, 0);
@@ -1307,8 +1588,12 @@ export async function main() {
     console.log("\n--- HCRIS SNF Ingestion Summary ---");
     console.log(`Fiscal years found:            ${fiscalYears.join(", ")}`);
     console.log(`Reports processed:             ${selectedReports.size}`);
-    console.log(`Providers matched:             ${providerMap.size}  (found in DB)`);
-    console.log(`Providers missing:             ${missingCcns.length}  (CCN not found)`);
+    console.log(
+      `Providers matched:             ${providerMap.size}  (found in DB)`,
+    );
+    console.log(
+      `Providers missing:             ${missingCcns.length}  (CCN not found)`,
+    );
     console.log(`payment_history rows upserted: ${upserted}`);
     console.log(`providers updated:             ${providersUpdated}`);
     if (skippedCcns.length > 0) {
@@ -1353,6 +1638,7 @@ git commit -m "feat: add SNF HCRIS entrypoint script"
 ### Task 8: HHA entrypoint script
 
 **Files:**
+
 - Create: `scripts/parse-hcris-hha.ts`
 
 Same structure as the SNF entrypoint. Differences: imports `transformHha`, logs `total_visits` in summary, header says `HHA`.
@@ -1396,7 +1682,9 @@ export async function main() {
     console.log(`  Loaded ${rptRows.length} RPT rows`);
 
     const selectedReports = selectBestReports(rptRows);
-    console.log(`  Selected ${selectedReports.size} reports (best per provider-year)`);
+    console.log(
+      `  Selected ${selectedReports.size} reports (best per provider-year)`,
+    );
 
     console.log("Loading NMRC file...");
     const nmrcPath = findFileBySuffix(tempDir, "_NMRC_");
@@ -1424,7 +1712,9 @@ export async function main() {
       console.warn(
         `${missingCcns.length} CCNs not found in providers table:`,
         missingCcns.slice(0, 10).join(", "),
-        missingCcns.length > 10 ? `... and ${missingCcns.length - 10} more` : "",
+        missingCcns.length > 10
+          ? `... and ${missingCcns.length - 10} more`
+          : "",
       );
     }
 
@@ -1464,7 +1754,9 @@ export async function main() {
     console.log(`\nUpdating ${providerUpdates.length} providers...`);
     const providersUpdated = await updateProviders(providerUpdates);
 
-    const fiscalYears = [...new Set(paymentRecords.map((r) => r.fiscal_year))].sort();
+    const fiscalYears = [
+      ...new Set(paymentRecords.map((r) => r.fiscal_year)),
+    ].sort();
     const totalRevenue = paymentRecords
       .filter((r) => r.medicare_payments !== null)
       .reduce((sum, r) => sum + r.medicare_payments!, 0);
@@ -1472,8 +1764,12 @@ export async function main() {
     console.log("\n--- HCRIS HHA Ingestion Summary ---");
     console.log(`Fiscal years found:            ${fiscalYears.join(", ")}`);
     console.log(`Reports processed:             ${selectedReports.size}`);
-    console.log(`Providers matched:             ${providerMap.size}  (found in DB)`);
-    console.log(`Providers missing:             ${missingCcns.length}  (CCN not found)`);
+    console.log(
+      `Providers matched:             ${providerMap.size}  (found in DB)`,
+    );
+    console.log(
+      `Providers missing:             ${missingCcns.length}  (CCN not found)`,
+    );
     console.log(`payment_history rows upserted: ${upserted}`);
     console.log(`providers updated:             ${providersUpdated}`);
     if (skippedCcns.length > 0) {
@@ -1521,6 +1817,7 @@ git commit -m "feat: add HHA HCRIS entrypoint script"
 ### Task 9: Hospice entrypoint script
 
 **Files:**
+
 - Create: `scripts/parse-hcris-hospice.ts`
 
 Same structure as SNF. Only difference: imports `transformHospice`, header says `Hospice`.
@@ -1547,11 +1844,15 @@ import { transformHospice } from "./lib/transform-hcris-hospice";
 export async function main() {
   const zipPath = process.argv[2];
   if (!zipPath) {
-    console.error("Usage: npx tsx scripts/parse-hcris-hospice.ts <path-to-zip>");
+    console.error(
+      "Usage: npx tsx scripts/parse-hcris-hospice.ts <path-to-zip>",
+    );
     process.exit(1);
   }
 
-  console.log(`Starting HCRIS Hospice ingestion from: ${path.resolve(zipPath)}`);
+  console.log(
+    `Starting HCRIS Hospice ingestion from: ${path.resolve(zipPath)}`,
+  );
 
   let tempDir: string | null = null;
   try {
@@ -1564,7 +1865,9 @@ export async function main() {
     console.log(`  Loaded ${rptRows.length} RPT rows`);
 
     const selectedReports = selectBestReports(rptRows);
-    console.log(`  Selected ${selectedReports.size} reports (best per provider-year)`);
+    console.log(
+      `  Selected ${selectedReports.size} reports (best per provider-year)`,
+    );
 
     console.log("Loading NMRC file...");
     const nmrcPath = findFileBySuffix(tempDir, "_NMRC_");
@@ -1589,7 +1892,9 @@ export async function main() {
       console.warn(
         `${missingCcns.length} CCNs not found in providers table:`,
         missingCcns.slice(0, 10).join(", "),
-        missingCcns.length > 10 ? `... and ${missingCcns.length - 10} more` : "",
+        missingCcns.length > 10
+          ? `... and ${missingCcns.length - 10} more`
+          : "",
       );
     }
 
@@ -1629,7 +1934,9 @@ export async function main() {
     console.log(`\nUpdating ${providerUpdates.length} providers...`);
     const providersUpdated = await updateProviders(providerUpdates);
 
-    const fiscalYears = [...new Set(paymentRecords.map((r) => r.fiscal_year))].sort();
+    const fiscalYears = [
+      ...new Set(paymentRecords.map((r) => r.fiscal_year)),
+    ].sort();
     const totalRevenue = paymentRecords
       .filter((r) => r.medicare_payments !== null)
       .reduce((sum, r) => sum + r.medicare_payments!, 0);
@@ -1637,8 +1944,12 @@ export async function main() {
     console.log("\n--- HCRIS Hospice Ingestion Summary ---");
     console.log(`Fiscal years found:            ${fiscalYears.join(", ")}`);
     console.log(`Reports processed:             ${selectedReports.size}`);
-    console.log(`Providers matched:             ${providerMap.size}  (found in DB)`);
-    console.log(`Providers missing:             ${missingCcns.length}  (CCN not found)`);
+    console.log(
+      `Providers matched:             ${providerMap.size}  (found in DB)`,
+    );
+    console.log(
+      `Providers missing:             ${missingCcns.length}  (CCN not found)`,
+    );
     console.log(`payment_history rows upserted: ${upserted}`);
     console.log(`providers updated:             ${providersUpdated}`);
     if (skippedCcns.length > 0) {
@@ -1691,11 +2002,12 @@ git commit -m "feat: add Hospice HCRIS entrypoint script"
 ### Task 10: Quarterly runbook
 
 **Files:**
+
 - Create: `docs/hcris-quarterly-runbook.md`
 
 - [ ] **Step 1: Create the runbook**
 
-```markdown
+````markdown
 # HCRIS Quarterly Runbook
 
 This document describes the steps to update Medicare payment data from CMS HCRIS cost reports.
@@ -1713,11 +2025,11 @@ Download the three zip files from the CMS cost reports page:
 
 On that page, look for the most recent fiscal year available. Download one zip for each provider type:
 
-| Provider Type | Form | What to look for on the page |
-|---|---|---|
-| Skilled Nursing Facility (SNF) | CMS-2540-10 | "SNF" or "Skilled Nursing" |
-| Home Health Agency (HHA) | CMS-1728-20 | "HHA" or "Home Health" |
-| Hospice | CMS-1984-14 | "Hospice" |
+| Provider Type                  | Form        | What to look for on the page |
+| ------------------------------ | ----------- | ---------------------------- |
+| Skilled Nursing Facility (SNF) | CMS-2540-10 | "SNF" or "Skilled Nursing"   |
+| Home Health Agency (HHA)       | CMS-1728-20 | "HHA" or "Home Health"       |
+| Hospice                        | CMS-1984-14 | "Hospice"                    |
 
 Save the files somewhere accessible, e.g. `~/Downloads/hcris/`.
 
@@ -1730,8 +2042,10 @@ Each zip should contain exactly three files. Check with:
 ```bash
 unzip -l ~/Downloads/hcris/snf_fy2023.zip
 ```
+````
 
 You should see files with these suffixes in their names:
+
 - `_RPT_` — report metadata (tens of thousands of rows)
 - `_NMRC_` — numeric values (millions of rows — this is normal)
 - `_ALPHNMRC_` — alpha-numeric values (not used by our scripts)
@@ -1792,16 +2106,19 @@ export $(grep -v '^#' .env.local | xargs)
 Run each script, passing the path to the corresponding zip file.
 
 **SNF:**
+
 ```bash
 npx tsx scripts/parse-hcris-snf.ts ~/Downloads/hcris/snf_fy2023.zip
 ```
 
 **HHA:**
+
 ```bash
 npx tsx scripts/parse-hcris-hha.ts ~/Downloads/hcris/hha_fy2023.zip
 ```
 
 **Hospice:**
+
 ```bash
 npx tsx scripts/parse-hcris-hospice.ts ~/Downloads/hcris/hospice_fy2023.zip
 ```
@@ -1828,6 +2145,7 @@ Ingestion complete.
 ```
 
 **What to check:**
+
 - `Providers missing` — CCNs in HCRIS that don't match any provider in our database. A small number (1–5%) is normal (closed providers or providers not yet in our dataset). A large number may indicate a CCN format mismatch — compare the raw `PRVDR_NUM` values in the RPT file against our `providers.cms_id` column.
 - `Total Medicare revenue` — Cross-reference against prior quarter. A dramatic change warrants investigation.
 - `providers skipped (null pay)` — Providers whose highest fiscal year had no extractable payment amount. Investigate if unexpectedly high.
@@ -1850,14 +2168,15 @@ If the script fails early (e.g. during zip extraction), no data will have been w
 - [ ] Ran `parse-hcris-hha.ts` — reviewed summary
 - [ ] Ran `parse-hcris-hospice.ts` — reviewed summary
 - [ ] Confirmed `providers.annual_medicare_payments` is populated in the database
-```
+
+````
 
 - [ ] **Step 2: Commit**
 
 ```bash
 git add docs/hcris-quarterly-runbook.md
 git commit -m "docs: add HCRIS quarterly runbook for operators"
-```
+````
 
 ---
 

@@ -9,8 +9,8 @@ import { lookupValue, parseFiscalYear, type PaymentRecord } from "./hcris";
  */
 const COORDS = {
   medicare_payments: { wksht: "B000000", line: "10000", col: "01000" },
-  total_visits:      { wksht: "S300004", line: "00200", col: "00500" },
-  total_patients:    { wksht: "S300004", line: "00100", col: "00500" },
+  total_visits: { wksht: "S300004", line: "00200", col: "00500" },
+  total_patients: { wksht: "S300004", line: "00100", col: "00500" },
 } as const;
 
 export interface HhaPaymentRecord extends PaymentRecord {
@@ -37,7 +37,7 @@ export function transformHha(
       COORDS.medicare_payments.col,
     ),
     total_charges: null, // HHA does not extract total_charges
-    total_days: null,    // HHA does not extract total_days
+    total_days: null, // HHA does not extract total_days
     total_patients: lookupValue(
       nmrcGroup,
       COORDS.total_patients.wksht,
