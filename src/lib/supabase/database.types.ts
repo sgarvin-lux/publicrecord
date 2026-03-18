@@ -383,6 +383,56 @@ export type Database = {
           },
         ];
       };
+      quality_measures: {
+        Row: {
+          created_at: string | null;
+          data_source: string;
+          id: string;
+          measure_code: string;
+          measure_name: string | null;
+          national_avg: number | null;
+          period: string | null;
+          provider_id: string;
+          score: number | null;
+          state_avg: number | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          data_source: string;
+          id?: string;
+          measure_code: string;
+          measure_name?: string | null;
+          national_avg?: number | null;
+          period?: string | null;
+          provider_id: string;
+          score?: number | null;
+          state_avg?: number | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          data_source?: string;
+          id?: string;
+          measure_code?: string;
+          measure_name?: string | null;
+          national_avg?: number | null;
+          period?: string | null;
+          provider_id?: string;
+          score?: number | null;
+          state_avg?: number | null;
+          updated_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quality_measures_provider_id_fkey";
+            columns: ["provider_id"];
+            isOneToOne: false;
+            referencedRelation: "providers";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       submission_photos: {
         Row: {
           caption: string | null;
