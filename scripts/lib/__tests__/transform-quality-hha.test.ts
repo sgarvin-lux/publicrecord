@@ -22,7 +22,11 @@ const sampleNationalRow = {
 
 describe("transformQualityHha", () => {
   it("produces one row per HHA_MEASURES entry per provider", () => {
-    const result = transformQualityHha([sampleProviderRow], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [sampleProviderRow],
+      sampleNationalRow,
+      lookup,
+    );
     expect(result.length).toBeGreaterThan(0);
     expect(result.every((r) => r.provider_id === "uuid-hha-1")).toBe(true);
     expect(result.every((r) => r.data_source === "cms-hha")).toBe(true);
@@ -31,7 +35,11 @@ describe("transformQualityHha", () => {
   });
 
   it("joins national averages correctly for DTC measure", () => {
-    const result = transformQualityHha([sampleProviderRow], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [sampleProviderRow],
+      sampleNationalRow,
+      lookup,
+    );
     const dtcRow = result.find((r) => r.measure_code === "HHA_DTC");
     expect(dtcRow).toBeDefined();
     expect(dtcRow?.score).toBe(89.38);
@@ -58,7 +66,11 @@ describe("transformQualityHha", () => {
       ...sampleProviderRow,
       dtc_riskstandardized_rate: "",
     };
-    const result = transformQualityHha([rowWithMissingScore], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [rowWithMissingScore],
+      sampleNationalRow,
+      lookup,
+    );
     const dtcRow = result.find((r) => r.measure_code === "HHA_DTC");
     expect(dtcRow?.score).toBeNull();
   });

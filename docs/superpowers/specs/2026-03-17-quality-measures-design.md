@@ -8,14 +8,14 @@ Ingest quality measure data for all three provider types (nursing home, home hea
 
 ## CMS Data Sources
 
-| Provider Type | Dataset ID | Format | Notes |
-|---|---|---|---|
+| Provider Type              | Dataset ID  | Format                        | Notes                                                                                                                                                                                                              |
+| -------------------------- | ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | SNF quality measures (MDS) | `djen-97ju` | Long (1 row/provider+measure) | ~20 measures, includes state + national avg. **Separate from** the nursing home provider dataset `4pq5-n9py` used by `ingest-providers.ts`. CMS data catalog: https://data.cms.gov/provider-data/dataset/djen-97ju |
-| HHA providers | `6jpm-sxkc` | Wide (1 row/provider) | ~14 measures as columns; same dataset as provider ingestion |
-| HHA national avg | `97z8-de96` | 1-row summary | Same column names as `6jpm-sxkc` |
-| Hospice claims | `252m-zfp9` | Long | ~38 measures; same dataset as provider ingestion |
-| Hospice CAHPS providers | `gxki-hrr8` | Long | ~25 patient experience measures |
-| Hospice CAHPS national avg | `7cv8-v37d` | Long (1 row/measure) | Joined to `gxki-hrr8` on `measure_code` |
+| HHA providers              | `6jpm-sxkc` | Wide (1 row/provider)         | ~14 measures as columns; same dataset as provider ingestion                                                                                                                                                        |
+| HHA national avg           | `97z8-de96` | 1-row summary                 | Same column names as `6jpm-sxkc`                                                                                                                                                                                   |
+| Hospice claims             | `252m-zfp9` | Long                          | ~38 measures; same dataset as provider ingestion                                                                                                                                                                   |
+| Hospice CAHPS providers    | `gxki-hrr8` | Long                          | ~25 patient experience measures                                                                                                                                                                                    |
+| Hospice CAHPS national avg | `7cv8-v37d` | Long (1 row/measure)          | Joined to `gxki-hrr8` on `measure_code`                                                                                                                                                                            |
 
 All datasets are fetched via the existing `fetchAllPages(datasetId)` utility in `scripts/lib/cms-api.ts`.
 
@@ -52,6 +52,7 @@ CREATE TRIGGER quality_measures_updated_at
 ```
 
 **Design decisions:**
+
 - **Latest period only** — upsert on `(provider_id, measure_code)` overwrites the previous period. No history retained in M3 (trend data is a future feature).
 - **`state_avg` nullable** — CMS does not publish state-level averages for HHA or Hospice; only SNF has state averages.
 - **`measure_code` index** — supports cross-provider ranking queries needed for risk scoring (e.g., "all SNFs ranked by readmission rate").
@@ -65,14 +66,14 @@ All three transform modules produce the same row type:
 
 ```typescript
 interface QualityMeasureRow {
-  provider_id: string;       // UUID resolved from cms_id via lookup map
+  provider_id: string; // UUID resolved from cms_id via lookup map
   measure_code: string;
   measure_name: string | null;
   score: number | null;
   national_avg: number | null;
   state_avg: number | null;
   period: string | null;
-  data_source: string;       // e.g. "cms-mds", "cms-hha", "cms-hospice-claims", "cms-hospice-cahps"
+  data_source: string; // e.g. "cms-mds", "cms-hha", "cms-hospice-claims", "cms-hospice-cahps"
 }
 ```
 
@@ -105,11 +106,31 @@ Dataset `6jpm-sxkc` is wide format — measures are column names, not rows. Requ
 
 ```typescript
 const HHA_MEASURES = [
-  { col: "how_often_patients_got_better_at_walking_or_moving_around", code: "HHA_WALK", name: "Patients who got better at walking" },
-  { col: "discharge_function_score", code: "HHA_DISCHARGE_FUNCTION", name: "Discharge function score" },
-  { col: "dtc_riskstandardized_rate", code: "HHA_DTC", name: "Discharged to community (risk-standardized)" },
-  { col: "ppr_riskstandardized_rate", code: "HHA_PPR", name: "Potentially preventable readmissions (risk-standardized)" },
-  { col: "pph_riskstandardized_rate", code: "HHA_PPH", name: "Potentially preventable hospitalizations (risk-standardized)" },
+  {
+    col: "how_often_patients_got_better_at_walking_or_moving_around",
+    code: "HHA_WALK",
+    name: "Patients who got better at walking",
+  },
+  {
+    col: "discharge_function_score",
+    code: "HHA_DISCHARGE_FUNCTION",
+    name: "Discharge function score",
+  },
+  {
+    col: "dtc_riskstandardized_rate",
+    code: "HHA_DTC",
+    name: "Discharged to community (risk-standardized)",
+  },
+  {
+    col: "ppr_riskstandardized_rate",
+    code: "HHA_PPR",
+    name: "Potentially preventable readmissions (risk-standardized)",
+  },
+  {
+    col: "pph_riskstandardized_rate",
+    code: "HHA_PPH",
+    name: "Potentially preventable hospitalizations (risk-standardized)",
+  },
   // ... remaining ~9 measures
 ] as const;
 ```
@@ -123,6 +144,7 @@ The national averages dataset `97z8-de96` uses the standard CMS datastore query 
 Two long-format datasets, both normalized to `QualityMeasureRow`:
 
 **Claims (`252m-zfp9`):** Raw CMS API field names:
+
 - `cms_certification_number_ccn` → CCN for lookup
 - `measure_code` → `measure_code` (literal field name in the API response)
 - `measure_name` → `measure_name`
@@ -132,6 +154,7 @@ Two long-format datasets, both normalized to `QualityMeasureRow`:
 - `data_source: "cms-hospice-claims"`
 
 **CAHPS (`gxki-hrr8`):** Raw CMS API field names:
+
 - `cms_certification_number_ccn` → CCN for lookup (same field name as claims dataset)
 - `measure_code` → `measure_code` (literal field name in the API response)
 - `measure_name` → `measure_name`

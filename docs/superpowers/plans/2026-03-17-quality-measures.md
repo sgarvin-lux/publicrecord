@@ -12,18 +12,18 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|---|---|---|
-| `supabase/migrations/20260317000011_create_quality_measures.sql` | Create | DDL for `quality_measures` table |
-| `src/lib/supabase/database.types.ts` | Modify | Add `quality_measures` table type |
-| `scripts/lib/quality-measures.ts` | Create | Shared `QualityMeasureRow` interface, `CmsRecord` type, `parseScore` helper |
-| `scripts/lib/transform-quality-snf.ts` | Create | Transform SNF MDS long-format rows |
-| `scripts/lib/transform-quality-hha.ts` | Create | Unpivot HHA wide-format rows + national avg join |
-| `scripts/lib/transform-quality-hospice.ts` | Create | Transform Hospice claims + CAHPS rows, merge and deduplicate |
-| `scripts/lib/__tests__/transform-quality-snf.test.ts` | Create | Unit tests for SNF transform |
-| `scripts/lib/__tests__/transform-quality-hha.test.ts` | Create | Unit tests for HHA transform |
-| `scripts/lib/__tests__/transform-quality-hospice.test.ts` | Create | Unit tests for Hospice transform |
-| `scripts/ingest-quality-measures.ts` | Create | Ingest orchestrator: fetch, transform, upsert all three types |
+| File                                                             | Action | Responsibility                                                              |
+| ---------------------------------------------------------------- | ------ | --------------------------------------------------------------------------- |
+| `supabase/migrations/20260317000011_create_quality_measures.sql` | Create | DDL for `quality_measures` table                                            |
+| `src/lib/supabase/database.types.ts`                             | Modify | Add `quality_measures` table type                                           |
+| `scripts/lib/quality-measures.ts`                                | Create | Shared `QualityMeasureRow` interface, `CmsRecord` type, `parseScore` helper |
+| `scripts/lib/transform-quality-snf.ts`                           | Create | Transform SNF MDS long-format rows                                          |
+| `scripts/lib/transform-quality-hha.ts`                           | Create | Unpivot HHA wide-format rows + national avg join                            |
+| `scripts/lib/transform-quality-hospice.ts`                       | Create | Transform Hospice claims + CAHPS rows, merge and deduplicate                |
+| `scripts/lib/__tests__/transform-quality-snf.test.ts`            | Create | Unit tests for SNF transform                                                |
+| `scripts/lib/__tests__/transform-quality-hha.test.ts`            | Create | Unit tests for HHA transform                                                |
+| `scripts/lib/__tests__/transform-quality-hospice.test.ts`        | Create | Unit tests for Hospice transform                                            |
+| `scripts/ingest-quality-measures.ts`                             | Create | Ingest orchestrator: fetch, transform, upsert all three types               |
 
 ---
 
@@ -32,6 +32,7 @@
 ### Task 1: Migration and DB type update
 
 **Files:**
+
 - Create: `supabase/migrations/20260317000011_create_quality_measures.sql`
 - Modify: `src/lib/supabase/database.types.ts`
 
@@ -149,6 +150,7 @@ git commit -m "feat: add quality_measures table migration and DB types"
 ### Task 2: Shared types and SNF transform
 
 **Files:**
+
 - Create: `scripts/lib/quality-measures.ts`
 - Create: `scripts/lib/transform-quality-snf.ts`
 - Create: `scripts/lib/__tests__/transform-quality-snf.test.ts`
@@ -168,7 +170,8 @@ describe("transformQualitySnf", () => {
   const baseRow = {
     cms_certification_number_ccn: "015001",
     measure_cd: "NH_QM_001",
-    measure_description: "Percent of long-stay residents who received an antipsychotic",
+    measure_description:
+      "Percent of long-stay residents who received an antipsychotic",
     score: "14.5",
     national_rate: "15.2",
     state_average: "13.8",
@@ -182,7 +185,8 @@ describe("transformQualitySnf", () => {
     expect(result[0]).toEqual({
       provider_id: "uuid-provider-1",
       measure_code: "NH_QM_001",
-      measure_name: "Percent of long-stay residents who received an antipsychotic",
+      measure_name:
+        "Percent of long-stay residents who received an antipsychotic",
       score: 14.5,
       national_avg: 15.2,
       state_avg: 13.8,
@@ -208,7 +212,10 @@ describe("transformQualitySnf", () => {
   });
 
   it("returns null score for 'Not Available'", () => {
-    const result = transformQualitySnf([{ ...baseRow, score: "Not Available" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, score: "Not Available" }],
+      lookup,
+    );
     expect(result[0].score).toBeNull();
   });
 
@@ -218,7 +225,10 @@ describe("transformQualitySnf", () => {
   });
 
   it("returns null period when start_date is empty", () => {
-    const result = transformQualitySnf([{ ...baseRow, start_date: "" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, start_date: "" }],
+      lookup,
+    );
     expect(result[0].period).toBeNull();
   });
 
@@ -229,7 +239,10 @@ describe("transformQualitySnf", () => {
   });
 
   it("returns null national_avg when national_rate is empty", () => {
-    const result = transformQualitySnf([{ ...baseRow, national_rate: "" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, national_rate: "" }],
+      lookup,
+    );
     expect(result[0].national_avg).toBeNull();
   });
 });
@@ -340,15 +353,18 @@ git commit -m "feat: add shared quality-measures types and SNF transform"
 ### Task 3: HHA transform
 
 **Files:**
+
 - Create: `scripts/lib/transform-quality-hha.ts`
 - Create: `scripts/lib/__tests__/transform-quality-hha.test.ts`
 
 **Background:** Dataset `6jpm-sxkc` (HHA providers) is wide format — one row per provider, with quality measures as individual columns. The design spec estimated "~14 measures" but a live API sample showed only 5 numeric measure columns at the provider level — the outcome/process measures (walking, bathing, etc.) present in the national averages dataset are **not exposed at the provider level** in this endpoint. `HHA_MEASURES` contains the 5 confirmed provider-level columns. If CMS updates the endpoint to include more measures, add them to `HHA_MEASURES`.
 
 **Verify this list before implementation** — fetch one row to confirm field names:
+
 ```bash
 curl "https://data.cms.gov/provider-data/api/1/datastore/query/6jpm-sxkc/0?limit=1" | npx fx '.results[0]'
 ```
+
 The confirmed numeric measure columns are listed in `HHA_MEASURES` below.
 
 #### Step 3a: Write the failing HHA tests first
@@ -381,7 +397,11 @@ const sampleNationalRow = {
 
 describe("transformQualityHha", () => {
   it("produces one row per HHA_MEASURES entry per provider", () => {
-    const result = transformQualityHha([sampleProviderRow], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [sampleProviderRow],
+      sampleNationalRow,
+      lookup,
+    );
     expect(result.length).toBeGreaterThan(0);
     expect(result.every((r) => r.provider_id === "uuid-hha-1")).toBe(true);
     expect(result.every((r) => r.data_source === "cms-hha")).toBe(true);
@@ -390,7 +410,11 @@ describe("transformQualityHha", () => {
   });
 
   it("joins national averages correctly for DTC measure", () => {
-    const result = transformQualityHha([sampleProviderRow], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [sampleProviderRow],
+      sampleNationalRow,
+      lookup,
+    );
     const dtcRow = result.find((r) => r.measure_code === "HHA_DTC");
     expect(dtcRow).toBeDefined();
     expect(dtcRow?.score).toBe(89.38);
@@ -417,7 +441,11 @@ describe("transformQualityHha", () => {
       ...sampleProviderRow,
       dtc_riskstandardized_rate: "",
     };
-    const result = transformQualityHha([rowWithMissingScore], sampleNationalRow, lookup);
+    const result = transformQualityHha(
+      [rowWithMissingScore],
+      sampleNationalRow,
+      lookup,
+    );
     const dtcRow = result.find((r) => r.measure_code === "HHA_DTC");
     expect(dtcRow?.score).toBeNull();
   });
@@ -482,7 +510,8 @@ const HHA_MEASURES = [
     col: "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
     code: "HHA_SPENDING_RATIO",
     name: "Medicare spending per episode (ratio to national average)",
-    national_col: "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
+    national_col:
+      "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
   },
 ] as const;
 
@@ -505,7 +534,9 @@ export function transformQualityHha(
         measure_code: m.code,
         measure_name: m.name,
         score: parseScore(row[m.col]),
-        national_avg: nationalRow ? parseScore(nationalRow[m.national_col]) : null,
+        national_avg: nationalRow
+          ? parseScore(nationalRow[m.national_col])
+          : null,
         state_avg: null,
         period: null,
         data_source: "cms-hha",
@@ -545,10 +576,12 @@ git commit -m "feat: add HHA quality measures transform"
 ### Task 4: Hospice transform
 
 **Files:**
+
 - Create: `scripts/lib/transform-quality-hospice.ts`
 - Create: `scripts/lib/__tests__/transform-quality-hospice.test.ts`
 
 **Background:** Two datasets are fetched for hospice:
+
 - `252m-zfp9` (claims-based measures, long format, `measure_code` field, ~38 measures)
 - `gxki-hrr8` (CAHPS patient experience, long format, `measure_code` field, ~25 measures)
 - `7cv8-v37d` (CAHPS national averages, one row per `measure_code`)
@@ -817,9 +850,11 @@ git commit -m "feat: add Hospice quality measures transform"
 ### Task 5: Ingest orchestrator
 
 **Files:**
+
 - Create: `scripts/ingest-quality-measures.ts`
 
 **Background:** This script follows the same pattern as `scripts/ingest-providers.ts` and `scripts/ingest-penalties.ts`. Key differences:
+
 - Provider lookup uses paginated `SELECT cms_id, id FROM providers` with `.range()` because quality measures reference nearly all ~30K providers (Supabase's default 1000-row limit would silently truncate).
 - HHA national avg fetch is wrapped in try/catch — if it fails, HHA rows are upserted with `national_avg: null`.
 - Three types are upserted separately to preserve per-type counts.
@@ -937,7 +972,9 @@ export async function main() {
     const hhaNationalRaw = await fetchAllPages("97z8-de96");
     hhaNationalRow = hhaNationalRaw[0] ?? null;
     if (!hhaNationalRow) {
-      console.warn("HHA national avg dataset returned no rows — national_avg will be null");
+      console.warn(
+        "HHA national avg dataset returned no rows — national_avg will be null",
+      );
     }
   } catch (err) {
     console.warn(
@@ -955,7 +992,9 @@ export async function main() {
   totalUpserted += hhaUpserted;
 
   // --- Hospice ---
-  console.log("\nFetching Hospice quality measures (252m-zfp9, gxki-hrr8, 7cv8-v37d)...");
+  console.log(
+    "\nFetching Hospice quality measures (252m-zfp9, gxki-hrr8, 7cv8-v37d)...",
+  );
   const hospiceClaimsRaw = await fetchAllPages("252m-zfp9");
   const hospiceCahpsRaw = await fetchAllPages("gxki-hrr8");
   const hospiceCahpsNationalRaw = await fetchAllPages("7cv8-v37d");
@@ -978,9 +1017,15 @@ export async function main() {
 
   // --- Summary ---
   console.log("\n--- Quality Measures Ingestion Summary ---");
-  console.log(`SNF:     ${snfRows.length} rows produced, ${snfStats.matched} providers matched, ${snfStats.missing} missing, ${snfUpserted} upserted`);
-  console.log(`HHA:     ${hhaRows.length} rows produced, ${hhaStats.matched} providers matched, ${hhaStats.missing} missing, ${hhaUpserted} upserted`);
-  console.log(`Hospice: ${hospiceRows.length} rows produced, ${hospiceStats.matched} providers matched, ${hospiceStats.missing} missing, ${hospiceUpserted} upserted`);
+  console.log(
+    `SNF:     ${snfRows.length} rows produced, ${snfStats.matched} providers matched, ${snfStats.missing} missing, ${snfUpserted} upserted`,
+  );
+  console.log(
+    `HHA:     ${hhaRows.length} rows produced, ${hhaStats.matched} providers matched, ${hhaStats.missing} missing, ${hhaUpserted} upserted`,
+  );
+  console.log(
+    `Hospice: ${hospiceRows.length} rows produced, ${hospiceStats.matched} providers matched, ${hospiceStats.missing} missing, ${hospiceUpserted} upserted`,
+  );
   console.log(`Total:   ${totalUpserted} rows upserted`);
 
   if (totalUpserted === 0) {
@@ -1028,16 +1073,19 @@ git commit -m "feat: add quality measures ingest script"
 - [ ] **Step 5: Run the script against the production database**
 
 First set env vars:
+
 ```bash
 set -a && source .env.local && set +a
 ```
 
 Then run:
+
 ```bash
 npx tsx scripts/ingest-quality-measures.ts
 ```
 
 Expected output (approximate):
+
 ```
 Starting CMS quality measures ingestion...
 Building provider lookup (paginated)...
@@ -1073,6 +1121,7 @@ If "Providers missing" exceeds 10% for any type, investigate CCN format mismatch
 - [ ] **Step 6: Verify data in the database**
 
 Confirm all three provider types are represented:
+
 ```sql
 SELECT data_source, COUNT(*) as row_count, COUNT(DISTINCT provider_id) as provider_count
 FROM quality_measures
@@ -1083,6 +1132,7 @@ ORDER BY data_source;
 Expected: rows for `cms-mds`, `cms-hha`, `cms-hospice-claims`, `cms-hospice-cahps` — all with non-zero counts.
 
 Run a cross-provider query to confirm the `measure_code` index is working:
+
 ```sql
 SELECT measure_code, COUNT(*) as provider_count, AVG(score) as avg_score
 FROM quality_measures

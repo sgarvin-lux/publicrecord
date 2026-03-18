@@ -37,7 +37,7 @@ async function upsertBatch(batch: QualityMeasureRow[]): Promise<number> {
   const { error, count } = await supabaseAdmin
     .from("quality_measures")
     .upsert(batch, {
-      onConflict: "provider_id,measure_code",
+      onConflict: "provider_id,measure_code,data_source",
       count: "exact",
     });
   if (error) throw new Error(`Upsert failed: ${error.message}`);
@@ -105,7 +105,9 @@ export async function main() {
     const hhaNationalRaw = await fetchAllPages("97z8-de96");
     hhaNationalRow = hhaNationalRaw[0] ?? null;
     if (!hhaNationalRow) {
-      console.warn("HHA national avg dataset returned no rows — national_avg will be null");
+      console.warn(
+        "HHA national avg dataset returned no rows — national_avg will be null",
+      );
     }
   } catch (err) {
     console.warn(
@@ -123,7 +125,9 @@ export async function main() {
   totalUpserted += hhaUpserted;
 
   // --- Hospice ---
-  console.log("\nFetching Hospice quality measures (252m-zfp9, gxki-hrr8, 7cv8-v37d)...");
+  console.log(
+    "\nFetching Hospice quality measures (252m-zfp9, gxki-hrr8, 7cv8-v37d)...",
+  );
   const hospiceClaimsRaw = await fetchAllPages("252m-zfp9");
   const hospiceCahpsRaw = await fetchAllPages("gxki-hrr8");
   const hospiceCahpsNationalRaw = await fetchAllPages("7cv8-v37d");
@@ -146,9 +150,15 @@ export async function main() {
 
   // --- Summary ---
   console.log("\n--- Quality Measures Ingestion Summary ---");
-  console.log(`SNF:     ${snfRows.length} rows produced, ${snfStats.matched} providers matched, ${snfStats.missing} missing, ${snfUpserted} upserted`);
-  console.log(`HHA:     ${hhaRows.length} rows produced, ${hhaStats.matched} providers matched, ${hhaStats.missing} missing, ${hhaUpserted} upserted`);
-  console.log(`Hospice: ${hospiceRows.length} rows produced, ${hospiceStats.matched} providers matched, ${hospiceStats.missing} missing, ${hospiceUpserted} upserted`);
+  console.log(
+    `SNF:     ${snfRows.length} rows produced, ${snfStats.matched} providers matched, ${snfStats.missing} missing, ${snfUpserted} upserted`,
+  );
+  console.log(
+    `HHA:     ${hhaRows.length} rows produced, ${hhaStats.matched} providers matched, ${hhaStats.missing} missing, ${hhaUpserted} upserted`,
+  );
+  console.log(
+    `Hospice: ${hospiceRows.length} rows produced, ${hospiceStats.matched} providers matched, ${hospiceStats.missing} missing, ${hospiceUpserted} upserted`,
+  );
   console.log(`Total:   ${totalUpserted} rows upserted`);
 
   if (totalUpserted === 0) {

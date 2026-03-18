@@ -7,7 +7,8 @@ describe("transformQualitySnf", () => {
   const baseRow = {
     cms_certification_number_ccn: "015001",
     measure_code: "401",
-    measure_description: "Percent of long-stay residents who received an antipsychotic",
+    measure_description:
+      "Percent of long-stay residents who received an antipsychotic",
     four_quarter_average_score: "14.5",
     measure_period: "2024Q4-2025Q3",
   };
@@ -18,7 +19,8 @@ describe("transformQualitySnf", () => {
     expect(result[0]).toEqual({
       provider_id: "uuid-provider-1",
       measure_code: "401",
-      measure_name: "Percent of long-stay residents who received an antipsychotic",
+      measure_name:
+        "Percent of long-stay residents who received an antipsychotic",
       score: 14.5,
       national_avg: null,
       state_avg: null,
@@ -44,12 +46,18 @@ describe("transformQualitySnf", () => {
   });
 
   it("returns null score for 'Not Available'", () => {
-    const result = transformQualitySnf([{ ...baseRow, four_quarter_average_score: "Not Available" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, four_quarter_average_score: "Not Available" }],
+      lookup,
+    );
     expect(result[0].score).toBeNull();
   });
 
   it("returns null score for empty string", () => {
-    const result = transformQualitySnf([{ ...baseRow, four_quarter_average_score: "" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, four_quarter_average_score: "" }],
+      lookup,
+    );
     expect(result[0].score).toBeNull();
   });
 
@@ -66,7 +74,10 @@ describe("transformQualitySnf", () => {
   });
 
   it("skips rows with empty measure_code", () => {
-    const result = transformQualitySnf([{ ...baseRow, measure_code: "" }], lookup);
+    const result = transformQualitySnf(
+      [{ ...baseRow, measure_code: "" }],
+      lookup,
+    );
     expect(result).toHaveLength(0);
   });
 });

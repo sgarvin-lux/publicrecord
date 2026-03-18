@@ -42,7 +42,8 @@ const HHA_MEASURES = [
     col: "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
     code: "HHA_SPENDING_RATIO",
     name: "Medicare spending per episode (ratio to national average)",
-    national_col: "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
+    national_col:
+      "how_much_medicare_spends_on_an_episode_of_care_at_this_agen_56e6",
   },
 ] as const;
 
@@ -65,7 +66,9 @@ export function transformQualityHha(
         measure_code: m.code,
         measure_name: m.name,
         score: parseScore(row[m.col]),
-        national_avg: nationalRow ? parseScore(nationalRow[m.national_col]) : null,
+        national_avg: nationalRow
+          ? parseScore(nationalRow[m.national_col])
+          : null,
         state_avg: null,
         period: null,
         data_source: "cms-hha",
