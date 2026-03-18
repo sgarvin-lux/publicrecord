@@ -38,6 +38,7 @@ describe("parseAmount", () => {
   it("parses large integer", () =>
     expect(parseAmount("25968510365")).toBe(25968510365));
   it("parses regular integer", () => expect(parseAmount("797586")).toBe(797586));
+  it("returns null for undefined", () => expect(parseAmount(undefined)).toBeNull());
 });
 
 describe("transformPufRows", () => {
