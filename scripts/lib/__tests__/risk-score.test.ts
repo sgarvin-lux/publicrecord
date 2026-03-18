@@ -67,17 +67,25 @@ describe("computePenaltyComponent", () => {
   it("returns 0 for (0, 0)", () => {
     expect(computePenaltyComponent(0, 0)).toBe(0);
   });
-  it("returns 7 for (50000, 1)", () => {
-    expect(computePenaltyComponent(50000, 1)).toBe(7);
+  it("returns 3 for ($50k, 1 penalty)", () => {
+    // amount: min(50000/100000, 10) = 0.5. count: min(1*2, 10) = 2. Total: 2.5 → 3
+    expect(computePenaltyComponent(50_000, 1)).toBe(3);
   });
-  it("returns 12 for (2000000, 1)", () => {
-    expect(computePenaltyComponent(2000000, 1)).toBe(12);
+  it("returns 12 for ($2M, 1 penalty) — caps amount at 10", () => {
+    // amount: min(2000000/100000, 10) = 10. count: min(1*2, 10) = 2. Total: 12
+    expect(computePenaltyComponent(2_000_000, 1)).toBe(12);
   });
-  it("returns 10 for (0, 10)", () => {
+  it("returns 10 for ($0, 10 penalties) — caps count at 10", () => {
+    // amount: 0. count: min(10*2, 10) = 10. Total: 10
     expect(computePenaltyComponent(0, 10)).toBe(10);
   });
-  it("returns 20 for (5000000, 50)", () => {
-    expect(computePenaltyComponent(5000000, 50)).toBe(20);
+  it("returns 20 for ($5M, 50 penalties) — caps total at 20", () => {
+    // amount: 10. count: 10. Total: 20
+    expect(computePenaltyComponent(5_000_000, 50)).toBe(20);
+  });
+  it("returns 7 for ($500k, 1 penalty)", () => {
+    // amount: min(500000/100000, 10) = 5. count: 2. Total: 7
+    expect(computePenaltyComponent(500_000, 1)).toBe(7);
   });
 });
 

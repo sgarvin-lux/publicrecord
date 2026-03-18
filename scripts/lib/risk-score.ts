@@ -53,7 +53,7 @@ export function computePenaltyComponent(
   totalPenaltyAmount: number,
   penaltyCount: number
 ): number {
-  const amountPart = Math.min(totalPenaltyAmount / 10_000, 10);
+  const amountPart = Math.min(totalPenaltyAmount / 100_000, 10);
   const countPart = Math.min(penaltyCount * 2, 10);
   return Math.round(Math.min(amountPart + countPart, 20));
 }
