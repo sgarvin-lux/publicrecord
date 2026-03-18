@@ -307,9 +307,13 @@ export async function main() {
   console.log(`Total providers scored: ${updates.length}`);
   console.log(`Providers with risk > 0: ${scored}`);
   console.log(`Providers with ETE > 0: ${withEte}`);
-  console.log(
-    `Average risk score: ${(updates.reduce((s, u) => s + u.risk_score, 0) / updates.length).toFixed(1)}`,
-  );
+  const avg =
+    updates.length > 0
+      ? (
+          updates.reduce((s, u) => s + u.risk_score, 0) / updates.length
+        ).toFixed(1)
+      : "N/A";
+  console.log(`Average risk score: ${avg}`);
   console.log(
     `Total ETE: $${updates.reduce((s, u) => s + u.ete, 0).toLocaleString()}`,
   );
