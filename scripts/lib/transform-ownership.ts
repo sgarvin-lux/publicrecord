@@ -1,4 +1,4 @@
-export type CmsRecord = Record<string, string | undefined>;
+type CmsRecord = Record<string, string | undefined>;
 
 export interface OwnershipRow {
   cms_id: string;         // intermediate — used for provider_id lookup, not persisted
@@ -52,7 +52,7 @@ function trimOrNull(value: string | undefined): string | null {
 function parsePct(value: string | undefined): number | null {
   if (!value) return null;
   const parsed = parseFloat(value);
-  return isNaN(parsed) ? null : parsed;
+  return isNaN(parsed) || parsed < 0 || parsed > 100 ? null : parsed;
 }
 
 // CMS association_date format: "since MM/DD/YYYY" → ISO: YYYY-MM-DD

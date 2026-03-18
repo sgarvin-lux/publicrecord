@@ -115,6 +115,11 @@ describe("transformOwnership", () => {
     ).toBeNull();
   });
 
+  it("returns null for ownership_pct out of range", () => {
+    expect(transformOwnership({ ...baseRecord, ownership_percentage: "150" })).toMatchObject({ ownership_pct: null });
+    expect(transformOwnership({ ...baseRecord, ownership_percentage: "-1" })).toMatchObject({ ownership_pct: null });
+  });
+
   it("returns null ownership_pct when field is absent", () => {
     const { ownership_percentage: _, ...rest } = baseRecord;
     expect(transformOwnership(rest)?.ownership_pct).toBeNull();
