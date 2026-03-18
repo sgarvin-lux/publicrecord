@@ -40,16 +40,12 @@ export async function main(): Promise<void> {
     .neq("id", "00000000-0000-0000-0000-000000000000");
   if (e1) throw new Error(`Delete provider_ownership failed: ${e1.message}`);
 
-  // Step 2: Null out providers.operator_id (batched)
-  const allProviderIds = [...providerMap.values()];
-  for (let i = 0; i < allProviderIds.length; i += 500) {
-    const chunk = allProviderIds.slice(i, i + 500);
-    const { error } = await supabaseAdmin
-      .from("providers")
-      .update({ operator_id: null })
-      .in("id", chunk);
-    if (error) throw new Error(`Null operator_id failed: ${error.message}`);
-  }
+  // Step 2: Null out providers.operator_id for all providers (full replace)
+  const { error: e2 } = await supabaseAdmin
+    .from("providers")
+    .update({ operator_id: null })
+    .not("operator_id", "is", null);
+  if (e2) throw new Error(`Null operator_id failed: ${e2.message}`);
 
   // Step 3: Delete all operators
   const { error: e3 } = await supabaseAdmin
