@@ -34,25 +34,13 @@ export async function main(): Promise<void> {
 
   // Phase 3: Full replace teardown
   // Step 1: Delete all provider_ownership rows
-  const { error: e1 } = await supabaseAdmin
-    .from("provider_ownership")
-    .delete()
-    .neq("id", "00000000-0000-0000-0000-000000000000");
-  if (e1) throw new Error(`Delete provider_ownership failed: ${e1.message}`);
+  // Pre-teardown guard: abort if CMS returned no records (API failure / empty response)
+  if (rawRecords.length === 0) {
+    console.error("Zero records fetched from CMS API — aborting without teardown to protect existing data");
+    process.exit(1);
+  }
 
-  // Step 2: Null out providers.operator_id for all providers (full replace)
-  const { error: e2 } = await supabaseAdmin
-    .from("providers")
-    .update({ operator_id: null })
-    .not("operator_id", "is", null);
-  if (e2) throw new Error(`Null operator_id failed: ${e2.message}`);
-
-  // Step 3: Delete all operators
-  const { error: e3 } = await supabaseAdmin
-    .from("operators")
-    .delete()
-    .neq("id", "00000000-0000-0000-0000-000000000000");
-  if (e3) throw new Error(`Delete operators failed: ${e3.message}`);
+  // Phase 2: Build provider lookup (cms_id → provider_id)
 
   // Phase 4: Transform and insert
   let skippedCount = 0;
