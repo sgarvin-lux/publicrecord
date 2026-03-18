@@ -8,6 +8,9 @@ on:
       - Ingest Deficiencies
       - Ingest Penalties
       - Ingest HCRIS Cost Reports
+      - Ingest Ownership
+      - Ingest Quality Measures
+      - Ingest PUF
     types: [completed]
     branches: [main]
 
