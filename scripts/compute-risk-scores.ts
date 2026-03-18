@@ -250,8 +250,11 @@ export async function main() {
 
   const updates: Array<{ id: string; risk_score: number; ete: number }> = [];
   for (const provider of providers) {
+    // HHA and hospice providers don't have meaningful overall star ratings;
+    // force null so the star weight is redistributed per spec.
+    const hasStarRating = provider.provider_type === "nursing_home";
     const starComponent = computeStarRatingComponent(
-      provider.star_rating_overall,
+      hasStarRating ? provider.star_rating_overall : null,
     );
     const deficiencyComponent = computeDeficiencyComponent(
       deficiencyMap.get(provider.id) ?? [],
