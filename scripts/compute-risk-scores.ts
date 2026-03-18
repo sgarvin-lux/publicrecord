@@ -83,8 +83,7 @@ async function fetchDeficiencySeverities(
         .in("provider_id", chunk)
         .range(from, from + pageSize - 1);
 
-      if (error)
-        throw new Error(`Fetch deficiencies failed: ${error.message}`);
+      if (error) throw new Error(`Fetch deficiencies failed: ${error.message}`);
       if (!data || data.length === 0) break;
       for (const row of data) {
         if (!row.scope_severity) continue;
@@ -117,8 +116,7 @@ async function fetchPenaltySummaries(
         .in("provider_id", chunk)
         .range(from, from + pageSize - 1);
 
-      if (error)
-        throw new Error(`Fetch penalties failed: ${error.message}`);
+      if (error) throw new Error(`Fetch penalties failed: ${error.message}`);
       if (!data || data.length === 0) break;
       for (const row of data) {
         const existing = map.get(row.provider_id);
