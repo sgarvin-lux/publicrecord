@@ -8,6 +8,7 @@ on:
       - Ingest Deficiencies
       - Ingest Penalties
       - Ingest HCRIS Cost Reports
+      - Ingest Ownership
     types: [completed]
     branches: [main]
 
