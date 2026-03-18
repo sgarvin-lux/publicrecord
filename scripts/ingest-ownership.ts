@@ -17,20 +17,18 @@ export async function main(): Promise<void> {
   console.log(`Fetched ${rawRecords.length} raw ownership records`);
 
   // Phase 2: Build provider lookup (cms_id → provider_id)
+  const uniqueCmsIds = [...new Set(rawRecords.map((r) => r["cms_certification_number_ccn"]).filter(Boolean))];
   const providerMap = new Map<string, string>();
-  let from = 0;
-  while (true) {
+  for (let i = 0; i < uniqueCmsIds.length; i += 500) {
+    const chunk = uniqueCmsIds.slice(i, i + 500);
     const { data, error } = await supabaseAdmin
       .from("providers")
       .select("id, cms_id")
-      .range(from, from + 999);
+      .in("cms_id", chunk);
     if (error) throw new Error(`Provider lookup failed: ${error.message}`);
-    if (!data || data.length === 0) break;
     for (const row of data as Array<{ id: string; cms_id: string }>) {
       providerMap.set(row.cms_id, row.id);
     }
-    if (data.length < 1000) break;
-    from += 1000;
   }
   console.log(`Loaded ${providerMap.size} providers into lookup`);
 
@@ -61,12 +59,19 @@ export async function main(): Promise<void> {
   if (e3) throw new Error(`Delete operators failed: ${e3.message}`);
 
   // Phase 4: Transform and insert
+  let skippedCount = 0;
+  const skippedSamples: string[] = [];
   const inserts: OwnershipInsertRow[] = [];
+
   for (const raw of rawRecords) {
     const row = transformOwnership(raw);
     if (!row) continue;
     const providerId = providerMap.get(row.cms_id);
-    if (!providerId) continue;
+    if (!providerId) {
+      skippedCount++;
+      if (skippedSamples.length < 5) skippedSamples.push(row.cms_id);
+      continue;
+    }
     inserts.push({
       provider_id: providerId,
       operator_id: null,
@@ -75,6 +80,12 @@ export async function main(): Promise<void> {
       ownership_pct: row.ownership_pct,
       effective_date: row.effective_date,
     });
+  }
+
+  if (skippedCount > 0) {
+    console.warn(
+      `Skipped ${skippedCount} records with no matching provider (sample IDs: ${skippedSamples.join(", ")})`
+    );
   }
 
   let totalInserted = 0;
@@ -136,7 +147,7 @@ export async function main(): Promise<void> {
   for (const [, group] of groups) {
     if (group.providerIds.size < 2) continue;
 
-    const operatorName = [...group.rawNames].sort()[0];
+    const operatorName = [...new Set(group.rawNames)].sort()[0];
     const providerIdList = [...group.providerIds];
 
     const { data: opData, error: opErr } = await supabaseAdmin
@@ -144,6 +155,9 @@ export async function main(): Promise<void> {
       .insert({ name: operatorName, facility_count: providerIdList.length })
       .select();
     if (opErr) throw new Error(`Insert operator failed: ${opErr.message}`);
+    if (!opData || opData.length === 0) {
+      throw new Error(`Insert operator returned no data for name: ${operatorName}`);
+    }
     const operatorId = (opData as Array<{ id: string }>)[0].id;
 
     const { error: poErr } = await supabaseAdmin
@@ -160,7 +174,15 @@ export async function main(): Promise<void> {
 
     operatorCount++;
   }
-  console.log(`Created ${operatorCount} operators`);
+
+  console.log("\n--- Ingestion Summary ---");
+  console.log(`Fetched: ${rawRecords.length} raw ownership records`);
+  console.log(`Matched: ${inserts.length} records to providers`);
+  if (skippedCount > 0) {
+    console.log(`Skipped: ${skippedCount} records (no matching provider)`);
+  }
+  console.log(`Inserted: ${totalInserted} provider_ownership rows`);
+  console.log(`Operators created: ${operatorCount}`);
 }
 
 const isDirectRun = import.meta.url === new URL(process.argv[1], "file://").href;

@@ -90,7 +90,7 @@ describe("ingest-ownership pipeline", () => {
       const callIndex = fromCallCount;
 
       // -----------------------------------------------------------------------
-      // Phase 2: providers lookup (paginated via .range())
+      // Phase 2: providers lookup (batched via .in())
       // Call 1
       // -----------------------------------------------------------------------
       if (table === "providers" && callIndex === 1) {
@@ -101,7 +101,7 @@ describe("ingest-ownership pipeline", () => {
         const pageChain: Record<string, unknown> = {};
         const terminal = Promise.resolve({ data, error: null });
         pageChain.select = () => pageChain;
-        pageChain.range = () => terminal;
+        pageChain.in = () => terminal;
         pageChain.then = terminal.then.bind(terminal);
         pageChain.catch = terminal.catch.bind(terminal);
         return pageChain as unknown as ReturnType<typeof supabaseAdmin.from>;
@@ -265,7 +265,7 @@ describe("ingest-ownership pipeline", () => {
         const pageChain: Record<string, unknown> = {};
         const terminal = Promise.resolve({ data, error: null });
         pageChain.select = () => pageChain;
-        pageChain.range = () => terminal;
+        pageChain.in = () => terminal;
         pageChain.then = terminal.then.bind(terminal);
         pageChain.catch = terminal.catch.bind(terminal);
         return pageChain as unknown as ReturnType<typeof supabaseAdmin.from>;
