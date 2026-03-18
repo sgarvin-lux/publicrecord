@@ -32,7 +32,37 @@ One test file:
 
 No per-type transform files. All three PUFs share the same field mapping, so a single `transformPufRows()` handles all three. The orchestrator calls it three times with the three URLs.
 
-`puf.ts` reuses `resolveProviders()` from `hcris.ts` for CCN → UUID lookup. It defines its own types and upsert functions because the conflict behavior differs from HCRIS.
+`puf.ts` reuses `resolveProviders()` from `hcris.ts` for CCN → UUID lookup. Before calling `resolveProviders()`, the ingest script deduplicates CCNs across all three datasets to avoid redundant DB queries (the function already batches in chunks of 1000, so deduplication is a courtesy optimization, not a correctness concern).
+
+`puf.ts` defines its own types and upsert functions — **do not model them on `hcris.ts` equivalents** — because the conflict behavior and provider update conditions differ.
+
+---
+
+## Types
+
+Defined in `puf.ts`:
+
+```typescript
+export interface PufPaymentHistoryRow {
+  provider_id: string;
+  fiscal_year: number;
+  medicare_payments: number | null;
+  total_charges: number | null;
+  total_days: number | null;
+  total_patients: number | null;
+  data_source: "utilization_puf";
+}
+
+export interface PufProviderUpdate {
+  provider_id: string;
+  annual_medicare_payments: number;
+  payment_data_year: number;
+  payment_data_source: "utilization_puf";
+  charge_to_payment_ratio: number | null;
+}
+```
+
+`PufPaymentHistoryRow` mirrors `PaymentHistoryRow` from `hcris.ts` but with `data_source: "utilization_puf"`. `PufProviderUpdate` mirrors `ProviderUpdate` from `hcris.ts` (including `charge_to_payment_ratio`) with `payment_data_source: "utilization_puf"`.
 
 ---
 
@@ -97,23 +127,35 @@ PUF is purely additive — it fills gaps, never displaces HCRIS data.
 
 ### `payment_history` table
 
-Upsert uses `ON CONFLICT (provider_id, fiscal_year) DO NOTHING`. If HCRIS already wrote a row for a provider+year, the PUF row is silently skipped. No schema change required.
+`upsertPufPaymentHistory()` in `puf.ts` uses the Supabase client with `ignoreDuplicates: true`:
+
+```typescript
+await supabaseAdmin.from("payment_history").upsert(batch, {
+  onConflict: "provider_id,fiscal_year",
+  ignoreDuplicates: true,   // ← DO NOTHING, not DO UPDATE
+  count: "exact",
+});
+```
+
+**Do not model this on `upsertPaymentHistory()` from `hcris.ts`** — that function uses the default behavior (`DO UPDATE SET ...`), which would overwrite existing HCRIS rows. `ignoreDuplicates: true` maps to `ON CONFLICT DO NOTHING`.
 
 ### `providers` table
 
-After inserting payment history rows, update `annual_medicare_payments`, `payment_data_year`, and `payment_data_source` only for providers where `payment_data_source IS NULL`. HCRIS-populated providers are untouched.
+`buildPufProviderUpdates()` accepts the full set of attempted PUF rows plus a map of each provider's current `payment_data_source`. It returns updates only for providers where `payment_data_source IS NULL`. When multiple PUF rows exist for the same provider (across datasets), the highest `fiscal_year` wins.
 
-```sql
--- Conceptual: only update providers with no existing payment source
-UPDATE providers
-SET annual_medicare_payments = $1,
-    payment_data_year = $2,
-    payment_data_source = 'utilization_puf'
-WHERE id = $3
-  AND payment_data_source IS NULL
+`charge_to_payment_ratio` is computed from `total_charges / medicare_payments` using the same `computeChargeToPaymentRatio()` helper from `hcris.ts`. Returns `null` if either value is null or if `medicare_payments` is 0.
+
+The Supabase update call applies a DB-side guard as the authoritative filter:
+
+```typescript
+await supabaseAdmin
+  .from("providers")
+  .update({ annual_medicare_payments, payment_data_year, payment_data_source: "utilization_puf", charge_to_payment_ratio })
+  .eq("id", provider_id)
+  .is("payment_data_source", null);   // ← primary guard; DO NOT remove
 ```
 
-The ingest script resolves which providers qualify before issuing updates (read `payment_data_source` in the provider resolution step, or use conditional update in the DB call).
+The `payment_data_source IS NULL` condition on the DB call is the primary correctness guard. The pre-filtering in `buildPufProviderUpdates()` is a secondary optimization to avoid issuing no-op updates.
 
 ---
 
@@ -121,11 +163,13 @@ The ingest script resolves which providers qualify before issuing updates (read 
 
 Sequential flow:
 
-1. Fetch and parse SNF CSV → `transformPufRows()` → resolve CCNs → `upsertPufPaymentHistory()`
-2. Fetch and parse HHA CSV → same
-3. Fetch and parse Hospice CSV → same
-4. Build provider updates from all inserted rows → `updateProvidersFromPuf()` (filtered to `payment_data_source IS NULL`)
-5. Print summary: rows fetched / matched / inserted / skipped (HCRIS conflicts) / providers updated
+1. Fetch and parse all three CSVs, collect provider-level rows
+2. Deduplicate CCNs across all three datasets → `resolveProviders()` → lookup map
+3. `transformPufRows()` for each dataset using the shared lookup
+4. `upsertPufPaymentHistory()` for each dataset (with `ignoreDuplicates: true`)
+5. Build provider updates from all attempted PUF rows → `buildPufProviderUpdates()`
+6. `updateProvidersFromPuf()` — issues conditional updates with `.is("payment_data_source", null)` guard
+7. Print summary: rows fetched / matched / inserted / providers updated
 
 Trigger: `npx tsx scripts/ingest-puf.ts` — annual manual run.
 
@@ -154,9 +198,11 @@ All tests in `scripts/lib/__tests__/puf.test.ts`, covering pure functions only (
 - Skips provider when `payment_data_source` is already set (e.g., `"hcris"`)
 - Picks highest fiscal year when multiple PUF rows exist for the same provider
 - Skips provider when `medicare_payments` is null
+- Computes `charge_to_payment_ratio` when both `total_charges` and `medicare_payments` are non-null
+- Sets `charge_to_payment_ratio` to `null` when `total_charges` is null
 
 ---
 
 ## No Schema Changes
 
-`payment_history` already has `data_source VARCHAR` (nullable). The `ON CONFLICT DO NOTHING` strategy works with the existing `(provider_id, fiscal_year)` unique index. No migration required.
+`payment_history` already has `data_source VARCHAR` (nullable). The `ignoreDuplicates: true` upsert strategy works with the existing `(provider_id, fiscal_year)` unique index. No migration required.
