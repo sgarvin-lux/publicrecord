@@ -52,7 +52,7 @@ import pdfParse from "pdf-parse";
 
 ```typescript
 export interface SffParseResult {
-  sffCcns: string[];       // deduplicated; SFF takes precedence over candidates
+  sffCcns: string[]; // deduplicated; SFF takes precedence over candidates
   candidateCcns: string[]; // deduplicated; excludes any CCN already in sffCcns
 }
 ```
@@ -75,7 +75,7 @@ Once inside a section, extracts 6-digit numeric CCNs via regex (`/\b\d{6}\b/`) f
 **Deduplication:** Each section accumulates CCNs into a `Set<string>` internally. `sffCcns` and `candidateCcns` are returned as deduplicated arrays. If a CCN appears in both sections (malformed input), it appears only in `sffCcns`:
 
 ```typescript
-const candidateCcns = [...rawCandidateSet].filter(ccn => !sffSet.has(ccn));
+const candidateCcns = [...rawCandidateSet].filter((ccn) => !sffSet.has(ccn));
 ```
 
 ---
@@ -110,7 +110,8 @@ Do NOT import `supabaseAdmin` at the top level.
 Required to prevent `main()` from firing when the module is imported:
 
 ```typescript
-const isDirectRun = import.meta.url === new URL(process.argv[1], "file://").href;
+const isDirectRun =
+  import.meta.url === new URL(process.argv[1], "file://").href;
 if (isDirectRun) {
   main().catch((err) => {
     console.error("Fatal error:", err);
@@ -150,11 +151,17 @@ Apply this pattern to every Supabase call (steps 5, 6, 7).
    `is_sff` and `is_sff_candidate` have `DEFAULT FALSE` in the migration — NULLs are not expected from standard ingestion and the filter is correct in practice. If NULLs are present from a non-standard insert path, those rows would be missed; this is an accepted risk for a manual quarterly script.
 6. **Set SFF flags** — skip if `sffIds` is empty; otherwise chunk in groups of 100:
    ```typescript
-   await supabaseAdmin.from("providers").update({ is_sff: true }).in("id", chunk);
+   await supabaseAdmin
+     .from("providers")
+     .update({ is_sff: true })
+     .in("id", chunk);
    ```
 7. **Set candidate flags** — skip if `candidateIds` is empty; otherwise chunk in groups of 100:
    ```typescript
-   await supabaseAdmin.from("providers").update({ is_sff_candidate: true }).in("id", chunk);
+   await supabaseAdmin
+     .from("providers")
+     .update({ is_sff_candidate: true })
+     .in("id", chunk);
    ```
 8. Print summary: CCNs in PDF / matched / unmatched / SFF updated / candidates updated
 

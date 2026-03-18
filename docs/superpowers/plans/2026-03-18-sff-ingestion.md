@@ -12,12 +12,12 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|------|--------|----------------|
-| `package.json` | Modify | Add `pdf-parse`, `@types/pdf-parse` as devDependencies |
-| `scripts/lib/sff.ts` | Create | `SffParseResult` type + `parseSffText()` pure function |
-| `scripts/lib/__tests__/sff.test.ts` | Create | Unit tests for `parseSffText()` |
-| `scripts/ingest-sff.ts` | Create | Orchestrator: reads PDF, resolves CCNs, updates DB flags |
+| File                                | Action | Responsibility                                           |
+| ----------------------------------- | ------ | -------------------------------------------------------- |
+| `package.json`                      | Modify | Add `pdf-parse`, `@types/pdf-parse` as devDependencies   |
+| `scripts/lib/sff.ts`                | Create | `SffParseResult` type + `parseSffText()` pure function   |
+| `scripts/lib/__tests__/sff.test.ts` | Create | Unit tests for `parseSffText()`                          |
+| `scripts/ingest-sff.ts`             | Create | Orchestrator: reads PDF, resolves CCNs, updates DB flags |
 
 ---
 
@@ -26,6 +26,7 @@
 ### Task 1: Install dependencies
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Step 1: Install pdf-parse and types**
@@ -56,6 +57,7 @@ git commit -m "chore: add pdf-parse and @types/pdf-parse for SFF ingestion"
 ### Task 2: Write failing tests for `parseSffText`
 
 **Files:**
+
 - Create: `scripts/lib/__tests__/sff.test.ts`
 
 - [ ] **Step 1: Create the test file**
@@ -171,6 +173,7 @@ git commit -m "test: add failing tests for parseSffText (PUB-6)"
 ### Task 3: Implement `parseSffText` to make tests pass
 
 **Files:**
+
 - Create: `scripts/lib/sff.ts`
 
 - [ ] **Step 1: Create the library file**
@@ -257,6 +260,7 @@ git commit -m "feat: add parseSffText pure function (PUB-6)"
 ### Task 4: Write the ingest orchestrator
 
 **Files:**
+
 - Create: `scripts/ingest-sff.ts`
 
 There are no unit tests for the orchestrator — all I/O and DB calls are not mocked per project convention. The script is verified by a dry-run type-check only.
