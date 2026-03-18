@@ -34,11 +34,16 @@ const basePufRow: PufPaymentHistoryRow = {
 describe("parseAmount", () => {
   it("returns null for *", () => expect(parseAmount("*")).toBeNull());
   it("returns null for empty string", () => expect(parseAmount("")).toBeNull());
-  it("returns null for non-numeric", () => expect(parseAmount("abc")).toBeNull());
+  it("returns null for non-numeric", () =>
+    expect(parseAmount("abc")).toBeNull());
+  it("returns null for partially-numeric (trailing chars)", () =>
+    expect(parseAmount("123abc")).toBeNull());
   it("parses large integer", () =>
     expect(parseAmount("25968510365")).toBe(25968510365));
-  it("parses regular integer", () => expect(parseAmount("797586")).toBe(797586));
-  it("returns null for undefined", () => expect(parseAmount(undefined)).toBeNull());
+  it("parses regular integer", () =>
+    expect(parseAmount("797586")).toBe(797586));
+  it("returns null for undefined", () =>
+    expect(parseAmount(undefined)).toBeNull());
 });
 
 describe("transformPufRows", () => {
@@ -121,8 +126,16 @@ describe("buildPufProviderUpdates", () => {
   });
 
   it("picks highest fiscal year for same provider across datasets", () => {
-    const older = { ...basePufRow, fiscal_year: 2022, medicare_payments: 500000 };
-    const newer = { ...basePufRow, fiscal_year: 2023, medicare_payments: 797586 };
+    const older = {
+      ...basePufRow,
+      fiscal_year: 2022,
+      medicare_payments: 500000,
+    };
+    const newer = {
+      ...basePufRow,
+      fiscal_year: 2023,
+      medicare_payments: 797586,
+    };
     const dataSources = new Map<string, string | null>([
       ["uuid-provider-1", null],
     ]);
@@ -139,6 +152,27 @@ describe("buildPufProviderUpdates", () => {
     ]);
     const result = buildPufProviderUpdates([row], dataSources);
     expect(result).toHaveLength(0);
+  });
+
+  it("falls back to lower fiscal year when latest year has suppressed payments", () => {
+    // Latest year is suppressed; earlier year has valid data — earlier should win.
+    const suppressed = {
+      ...basePufRow,
+      fiscal_year: 2023,
+      medicare_payments: null,
+    };
+    const valid = {
+      ...basePufRow,
+      fiscal_year: 2022,
+      medicare_payments: 500000,
+    };
+    const dataSources = new Map<string, string | null>([
+      ["uuid-provider-1", null],
+    ]);
+    const result = buildPufProviderUpdates([suppressed, valid], dataSources);
+    expect(result).toHaveLength(1);
+    expect(result[0].payment_data_year).toBe(2022);
+    expect(result[0].annual_medicare_payments).toBe(500000);
   });
 
   it("computes charge_to_payment_ratio", () => {

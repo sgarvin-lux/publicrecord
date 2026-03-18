@@ -43,7 +43,8 @@ export interface PufProviderUpdate {
  */
 export function parseAmount(value: string | undefined): number | null {
   if (!value || value.trim() === "" || value.trim() === "*") return null;
-  const parsed = parseFloat(value);
+  const trimmed = value.trim();
+  const parsed = Number(trimmed);
   return isNaN(parsed) ? null : parsed;
 }
 
@@ -82,8 +83,10 @@ export function transformPufRows(
  * Build provider update records from PUF rows for providers that have no
  * existing payment_data_source (i.e. no HCRIS data).
  *
- * When a provider has rows from multiple PUF datasets, the highest fiscal_year
- * wins. Skips providers whose medicare_payments is null.
+ * When a provider has rows from multiple PUF datasets or years, the highest
+ * fiscal_year row with non-null medicare_payments wins. Rows with suppressed
+ * (null) medicare_payments are skipped early so that a valid earlier-year row
+ * is not discarded in favour of a suppressed later-year row.
  *
  * @param rows             All PufPaymentHistoryRow records across all datasets.
  * @param currentDataSources Map<provider_id, payment_data_source | null>
@@ -93,11 +96,14 @@ export function buildPufProviderUpdates(
   rows: PufPaymentHistoryRow[],
   currentDataSources: Map<string, string | null>,
 ): PufProviderUpdate[] {
-  // Pre-filter: skip providers already sourced from HCRIS or elsewhere.
+  // Pre-filter: skip providers already sourced from HCRIS or elsewhere, and
+  // rows with suppressed medicare_payments (null). Filtering nulls here ensures
+  // a suppressed latest-year row does not shadow a valid earlier-year row.
   // The DB-side .is("payment_data_source", null) guard is the authoritative
   // correctness check — this is an optimization to skip no-op updates.
   const latestByProvider = new Map<string, PufPaymentHistoryRow>();
   for (const row of rows) {
+    if (row.medicare_payments === null) continue;
     const existingSource = currentDataSources.get(row.provider_id);
     if (existingSource !== null && existingSource !== undefined) continue;
     const current = latestByProvider.get(row.provider_id);
@@ -108,6 +114,8 @@ export function buildPufProviderUpdates(
 
   const updates: PufProviderUpdate[] = [];
   for (const row of latestByProvider.values()) {
+    // Null-payment rows were excluded in the selection loop above; this guard
+    // is for TypeScript narrowing only.
     if (row.medicare_payments === null) continue;
     updates.push({
       provider_id: row.provider_id,

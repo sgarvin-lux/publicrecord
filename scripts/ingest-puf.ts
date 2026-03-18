@@ -17,7 +17,9 @@ const PUF_URLS = {
     "https://data.cms.gov/sites/default/files/2025-08/7c92ef92-85ff-4f2a-a1a6-b1f4f25210e4/RY_2025_RY_25_PAC_PUF_HOS_2023_main_final_unformatted.csv",
 };
 
-const CHUNK_SIZE = 1000;
+// 500 stays safely under PostgREST's default row cap (commonly 1000), avoiding
+// silent truncation when querying payment_data_source for matched providers.
+const CHUNK_SIZE = 500;
 
 export async function main() {
   const { supabaseAdmin } = await import("./lib/supabase-admin");
