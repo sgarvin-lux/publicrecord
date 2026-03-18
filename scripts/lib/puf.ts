@@ -1,4 +1,19 @@
-import { computeChargeToPaymentRatio } from "./hcris";
+import { createInterface } from "readline";
+import { Readable } from "stream";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "../../src/lib/supabase/database.types";
+import { computeChargeToPaymentRatio, resolveProviders } from "./hcris";
+
+// Lazy import to avoid throwing at module load time in test environments
+// where SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set.
+let _supabaseAdmin: SupabaseClient<Database> | undefined;
+async function getSupabaseAdmin(): Promise<SupabaseClient<Database>> {
+  if (!_supabaseAdmin) {
+    const mod = await import("./supabase-admin");
+    _supabaseAdmin = mod.supabaseAdmin;
+  }
+  return _supabaseAdmin;
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -106,4 +121,121 @@ export function buildPufProviderUpdates(
     });
   }
   return updates;
+}
+
+// ─── CSV Fetching ──────────────────────────────────────────────────────────
+
+/**
+ * Fetch a PUF CSV from a URL and parse it into row objects.
+ * Streams the response body through readline line by line.
+ * Returns all rows — caller filters by SMRY_CTGRY.
+ */
+export async function fetchAndParsePufCsv(
+  url: string,
+): Promise<Record<string, string>[]> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch PUF CSV from ${url}: ${response.status} ${response.statusText}`,
+    );
+  }
+  if (!response.body) throw new Error(`No response body from ${url}`);
+
+  const nodeStream = Readable.fromWeb(
+    response.body as import("stream/web").ReadableStream,
+  );
+  const rl = createInterface({ input: nodeStream, crlfDelay: Infinity });
+
+  let headers: string[] = [];
+  const rows: Record<string, string>[] = [];
+  let isFirst = true;
+
+  for await (const line of rl) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (isFirst) {
+      headers = trimmed.split(",").map((h) => h.trim());
+      isFirst = false;
+      continue;
+    }
+    const cols = trimmed.split(",");
+    const row: Record<string, string> = {};
+    for (let j = 0; j < headers.length; j++) {
+      row[headers[j]] = (cols[j] ?? "").trim();
+    }
+    rows.push(row);
+  }
+
+  return rows;
+}
+
+// ─── Supabase Helpers ──────────────────────────────────────────────────────
+
+const BATCH_SIZE = 500;
+const CONCURRENT = 50;
+
+/**
+ * Insert PUF payment_history rows in batches of 500.
+ * Uses ignoreDuplicates: true (ON CONFLICT DO NOTHING) so existing HCRIS
+ * rows are never overwritten.
+ *
+ * DO NOT change to the default upsert behavior — that would overwrite HCRIS.
+ */
+export async function upsertPufPaymentHistory(
+  rows: PufPaymentHistoryRow[],
+): Promise<number> {
+  const supabaseAdmin = await getSupabaseAdmin();
+  let total = 0;
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error, count } = await supabaseAdmin
+      .from("payment_history")
+      .upsert(batch, {
+        onConflict: "provider_id,fiscal_year",
+        ignoreDuplicates: true, // DO NOTHING — preserves HCRIS rows
+        count: "exact",
+      });
+    if (error) throw new Error(`PUF upsert failed: ${error.message}`);
+    total += count ?? 0;
+    console.log(
+      `  Inserted batch ${Math.floor(i / BATCH_SIZE) + 1}: ${count ?? 0} rows`,
+    );
+  }
+  return total;
+}
+
+/**
+ * Update providers.annual_medicare_payments (and related fields) from PUF data.
+ * The .is("payment_data_source", null) guard is the primary correctness check:
+ * providers already sourced from HCRIS are never updated. DO NOT remove it.
+ */
+export async function updateProvidersFromPuf(
+  updates: PufProviderUpdate[],
+): Promise<number> {
+  const supabaseAdmin = await getSupabaseAdmin();
+  let total = 0;
+  for (let i = 0; i < updates.length; i += CONCURRENT) {
+    const batch = updates.slice(i, i + CONCURRENT);
+    const counts = await Promise.all(
+      batch.map(async (u) => {
+        const { error, count } = await supabaseAdmin
+          .from("providers")
+          .update(
+            {
+              annual_medicare_payments: u.annual_medicare_payments,
+              payment_data_year: u.payment_data_year,
+              payment_data_source: u.payment_data_source,
+              charge_to_payment_ratio: u.charge_to_payment_ratio,
+            },
+            { count: "exact" },
+          )
+          .eq("id", u.provider_id)
+          .is("payment_data_source", null); // primary guard — DO NOT remove
+        if (error) throw new Error(`Provider update failed: ${error.message}`);
+        return count ?? 0;
+      }),
+    );
+    total += counts.reduce((sum, c) => sum + c, 0);
+  }
+  return total;
 }
