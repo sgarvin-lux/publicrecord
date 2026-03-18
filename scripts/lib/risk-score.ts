@@ -32,14 +32,14 @@ const DEFICIENCY_WEIGHTS: Record<string, number> = {
 };
 
 export function computeStarRatingComponent(
-  starRatingOverall: number | null
+  starRatingOverall: number | null,
 ): number | null {
   if (starRatingOverall === null) return null;
   return (5 - starRatingOverall) * 5;
 }
 
 export function computeDeficiencyComponent(
-  severityCodes: (string | null)[]
+  severityCodes: (string | null)[],
 ): number {
   const rawSum = severityCodes.reduce<number>((sum, code) => {
     if (code === null || code === "") return sum;
@@ -51,7 +51,7 @@ export function computeDeficiencyComponent(
 
 export function computePenaltyComponent(
   totalPenaltyAmount: number,
-  penaltyCount: number
+  penaltyCount: number,
 ): number {
   const amountPart = Math.min(totalPenaltyAmount / 100_000, 10);
   const countPart = Math.min(penaltyCount * 2, 10);
@@ -60,7 +60,7 @@ export function computePenaltyComponent(
 
 export function computeSffComponent(
   isSff: boolean,
-  isSffCandidate: boolean
+  isSffCandidate: boolean,
 ): number {
   if (isSff) return 15;
   if (isSffCandidate) return 8;
@@ -68,7 +68,7 @@ export function computeSffComponent(
 }
 
 export function computeChargeRatioComponent(
-  relativeChargeRatio: number | null
+  relativeChargeRatio: number | null,
 ): number {
   if (relativeChargeRatio === null) return 0;
   if (relativeChargeRatio <= 1.5) return 0;
@@ -78,7 +78,13 @@ export function computeChargeRatioComponent(
 }
 
 export function computeRiskScore(components: RiskScoreComponents): number {
-  const { starRatingComponent, deficiencyComponent, penaltyComponent, sffComponent, chargeRatioComponent } = components;
+  const {
+    starRatingComponent,
+    deficiencyComponent,
+    penaltyComponent,
+    sffComponent,
+    chargeRatioComponent,
+  } = components;
 
   let score: number;
   if (starRatingComponent === null) {
@@ -111,7 +117,7 @@ function riskMultiplier(riskScore: number): number {
 
 export function computeEte(
   annualMedicarePayments: number | null,
-  riskScore: number | null
+  riskScore: number | null,
 ): number {
   if (annualMedicarePayments === null || riskScore === null) return 0;
   const result = annualMedicarePayments * riskMultiplier(riskScore);

@@ -45,9 +45,7 @@ async function fetchProviders(): Promise<ProviderData[]> {
   return providers;
 }
 
-function computeMediansByType(
-  providers: ProviderData[],
-): Map<string, number> {
+function computeMediansByType(providers: ProviderData[]): Map<string, number> {
   const byType = new Map<string, number[]>();
   for (const p of providers) {
     if (p.provider_type && p.charge_to_payment_ratio !== null) {
@@ -222,8 +220,7 @@ async function updateOperatorAggregates(): Promise<number> {
             total_medicare_payments: agg.total_medicare_payments,
           })
           .eq("id", agg.operator_id);
-        if (error)
-          throw new Error(`Operator update failed: ${error.message}`);
+        if (error) throw new Error(`Operator update failed: ${error.message}`);
         updated++;
       }),
     );
@@ -279,9 +276,8 @@ export async function main() {
         relativeChargeRatio = provider.charge_to_payment_ratio / median;
       }
     }
-    const chargeRatioComponent = computeChargeRatioComponent(
-      relativeChargeRatio,
-    );
+    const chargeRatioComponent =
+      computeChargeRatioComponent(relativeChargeRatio);
 
     const riskScore = computeRiskScore({
       starRatingComponent: starComponent,
