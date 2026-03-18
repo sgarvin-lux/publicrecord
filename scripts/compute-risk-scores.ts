@@ -72,22 +72,31 @@ async function fetchDeficiencySeverities(
   providerIds: string[],
 ): Promise<Map<string, string[]>> {
   const map = new Map<string, string[]>();
+  const pageSize = 1000;
   for (let i = 0; i < providerIds.length; i += 1000) {
     const chunk = providerIds.slice(i, i + 1000);
-    const { data, error } = await supabaseAdmin
-      .from("deficiencies")
-      .select("provider_id, scope_severity")
-      .in("provider_id", chunk);
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseAdmin
+        .from("deficiencies")
+        .select("provider_id, scope_severity")
+        .in("provider_id", chunk)
+        .range(from, from + pageSize - 1);
 
-    if (error) throw new Error(`Fetch deficiencies failed: ${error.message}`);
-    for (const row of data ?? []) {
-      if (!row.scope_severity) continue;
-      const existing = map.get(row.provider_id);
-      if (existing) {
-        existing.push(row.scope_severity);
-      } else {
-        map.set(row.provider_id, [row.scope_severity]);
+      if (error)
+        throw new Error(`Fetch deficiencies failed: ${error.message}`);
+      if (!data || data.length === 0) break;
+      for (const row of data) {
+        if (!row.scope_severity) continue;
+        const existing = map.get(row.provider_id);
+        if (existing) {
+          existing.push(row.scope_severity);
+        } else {
+          map.set(row.provider_id, [row.scope_severity]);
+        }
       }
+      if (data.length < pageSize) break;
+      from += pageSize;
     }
   }
   return map;
@@ -97,23 +106,32 @@ async function fetchPenaltySummaries(
   providerIds: string[],
 ): Promise<Map<string, { totalAmount: number; count: number }>> {
   const map = new Map<string, { totalAmount: number; count: number }>();
+  const pageSize = 1000;
   for (let i = 0; i < providerIds.length; i += 1000) {
     const chunk = providerIds.slice(i, i + 1000);
-    const { data, error } = await supabaseAdmin
-      .from("penalties")
-      .select("provider_id, amount")
-      .in("provider_id", chunk);
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabaseAdmin
+        .from("penalties")
+        .select("provider_id, amount")
+        .in("provider_id", chunk)
+        .range(from, from + pageSize - 1);
 
-    if (error) throw new Error(`Fetch penalties failed: ${error.message}`);
-    for (const row of data ?? []) {
-      const existing = map.get(row.provider_id);
-      const amount = row.amount ?? 0;
-      if (existing) {
-        existing.totalAmount += amount;
-        existing.count += 1;
-      } else {
-        map.set(row.provider_id, { totalAmount: amount, count: 1 });
+      if (error)
+        throw new Error(`Fetch penalties failed: ${error.message}`);
+      if (!data || data.length === 0) break;
+      for (const row of data) {
+        const existing = map.get(row.provider_id);
+        const amount = row.amount ?? 0;
+        if (existing) {
+          existing.totalAmount += amount;
+          existing.count += 1;
+        } else {
+          map.set(row.provider_id, { totalAmount: amount, count: 1 });
+        }
       }
+      if (data.length < pageSize) break;
+      from += pageSize;
     }
   }
   return map;
