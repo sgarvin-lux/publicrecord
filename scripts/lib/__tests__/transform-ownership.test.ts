@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { normalizeEntityName } from "../transform-ownership";
+import { normalizeEntityName, transformOwnership } from "../transform-ownership";
 
 describe("normalizeEntityName", () => {
   it("strips LLC suffix", () =>
@@ -70,4 +70,76 @@ describe("normalizeEntityName", () => {
 
   it("strips commas and periods from names", () =>
     expect(normalizeEntityName("Smith, John A.")).toBe("smith john a"));
+});
+
+describe("transformOwnership", () => {
+  const baseRecord: Record<string, string> = {
+    cms_certification_number_ccn: "015001",
+    owner_name: "Sunrise Senior Living, LLC",
+    owner_type: "Organization",
+    ownership_percentage: "100",
+    association_date: "since 01/15/2020",
+  };
+
+  it("maps a valid record correctly", () => {
+    expect(transformOwnership(baseRecord)).toEqual({
+      cms_id: "015001",
+      owner_name: "Sunrise Senior Living, LLC",
+      owner_type: "Organization",
+      ownership_pct: 100,
+      effective_date: "2020-01-15",
+    });
+  });
+
+  it("returns null when cms_id is missing", () => {
+    const { cms_certification_number_ccn: _, ...rest } = baseRecord;
+    expect(transformOwnership(rest)).toBeNull();
+  });
+
+  it("returns null when cms_id is blank", () => {
+    expect(transformOwnership({ ...baseRecord, cms_certification_number_ccn: "   " })).toBeNull();
+  });
+
+  it("returns null when owner_name is missing", () => {
+    const { owner_name: _, ...rest } = baseRecord;
+    expect(transformOwnership(rest)).toBeNull();
+  });
+
+  it("returns null when owner_name is blank/whitespace", () => {
+    expect(transformOwnership({ ...baseRecord, owner_name: "  " })).toBeNull();
+  });
+
+  it("returns null ownership_pct for non-numeric value", () => {
+    expect(
+      transformOwnership({ ...baseRecord, ownership_percentage: "N/A" })?.ownership_pct
+    ).toBeNull();
+  });
+
+  it("returns null ownership_pct when field is absent", () => {
+    const { ownership_percentage: _, ...rest } = baseRecord;
+    expect(transformOwnership(rest)?.ownership_pct).toBeNull();
+  });
+
+  it("returns null effective_date for invalid date", () => {
+    expect(
+      transformOwnership({ ...baseRecord, association_date: "not-a-date" })?.effective_date
+    ).toBeNull();
+  });
+
+  it("returns null effective_date when field is absent", () => {
+    const { association_date: _, ...rest } = baseRecord;
+    expect(transformOwnership(rest)?.effective_date).toBeNull();
+  });
+
+  it("parses ownership percentage with percent sign", () => {
+    expect(
+      transformOwnership({ ...baseRecord, ownership_percentage: "5%" })?.ownership_pct
+    ).toBe(5);
+  });
+
+  it("parses association_date with 'since' prefix", () => {
+    expect(
+      transformOwnership({ ...baseRecord, association_date: "since 03/15/2019" })?.effective_date
+    ).toBe("2019-03-15");
+  });
 });
