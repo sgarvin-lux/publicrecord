@@ -11,6 +11,7 @@
 The Medicare Post-Acute Care (PAC) Utilization Public Use Files are annual CSV files published by CMS at `data.cms.gov`. Each file covers a single calendar/fiscal year and contains provider-level, state-level, and national-level summary rows. We ingest only provider-level rows.
 
 Three datasets:
+
 - **SNF:** `RY_2025_PAC_PUF_SNF_2023_main_final_unformatted.csv` (~14,161 provider rows, FY 2023)
 - **HHA:** `RY_2025_PAC_PUF_HH_2023_main_final_unformatted.csv` (~8,466 provider rows, CY 2023)
 - **Hospice:** `RY_2025_PAC_PUF_HOS_2023_main_final_unformatted.csv` (~5,771 provider rows, FY 2023)
@@ -74,7 +75,8 @@ Download URLs are hardcoded constants in `ingest-puf.ts`. The URL path includes 
 const PUF_URLS = {
   snf: "https://data.cms.gov/sites/default/files/2025-08/b646c0b9-5fe0-475c-8820-007680020fdc/RY_2025_RY_25_PAC_PUF_SNF_2023_main_final_unformatted.csv",
   hha: "https://data.cms.gov/sites/default/files/2025-08/1d04af0f-9173-47b0-b5f8-26df7722247c/RY_2025_RY_25_PAC_PUF_HH_2023_main_final_unformatted.csv",
-  hospice: "https://data.cms.gov/sites/default/files/2025-08/7c92ef92-85ff-4f2a-a1a6-b1f4f25210e4/RY_2025_RY_25_PAC_PUF_HOS_2023_main_final_unformatted.csv",
+  hospice:
+    "https://data.cms.gov/sites/default/files/2025-08/7c92ef92-85ff-4f2a-a1a6-b1f4f25210e4/RY_2025_RY_25_PAC_PUF_HOS_2023_main_final_unformatted.csv",
 };
 ```
 
@@ -90,19 +92,20 @@ Only rows where `SMRY_CTGRY === 'PROVIDER'` are processed. National and state su
 
 All three PUF file types use the same column names for the fields we need:
 
-| CSV column | `payment_history` column | Notes |
-|---|---|---|
-| `PRVDR_ID` | CCN → `provider_id` | Resolved via `resolveProviders()` |
-| `YEAR` | `fiscal_year` | Parsed as integer |
-| `TOT_MDCR_PYMT_AMT` | `medicare_payments` | Via `parseAmount()` |
-| `TOT_CHRG_AMT` | `total_charges` | Via `parseAmount()` |
-| `TOT_SRVC_DAYS` | `total_days` | Via `parseAmount()` |
-| `BENE_DSTNCT_CNT` | `total_patients` | Via `parseAmount()` |
-| _(hardcoded)_ | `data_source: "utilization_puf"` | |
+| CSV column          | `payment_history` column         | Notes                             |
+| ------------------- | -------------------------------- | --------------------------------- |
+| `PRVDR_ID`          | CCN → `provider_id`              | Resolved via `resolveProviders()` |
+| `YEAR`              | `fiscal_year`                    | Parsed as integer                 |
+| `TOT_MDCR_PYMT_AMT` | `medicare_payments`              | Via `parseAmount()`               |
+| `TOT_CHRG_AMT`      | `total_charges`                  | Via `parseAmount()`               |
+| `TOT_SRVC_DAYS`     | `total_days`                     | Via `parseAmount()`               |
+| `BENE_DSTNCT_CNT`   | `total_patients`                 | Via `parseAmount()`               |
+| _(hardcoded)_       | `data_source: "utilization_puf"` |                                   |
 
 ### `parseAmount()` helper
 
 Converts CSV string values to `number | null`:
+
 - `"*"` (CMS-suppressed small counts) → `null`
 - Empty string → `null`
 - Non-numeric → `null`
@@ -111,6 +114,7 @@ Converts CSV string values to `number | null`:
 ### CSV streaming
 
 `fetchAndParsePufCsv(url)` in `puf.ts`:
+
 1. `fetch(url)` the CSV
 2. Stream response body through Node `readline` line by line
 3. First line → parse as header row
@@ -132,7 +136,7 @@ PUF is purely additive — it fills gaps, never displaces HCRIS data.
 ```typescript
 await supabaseAdmin.from("payment_history").upsert(batch, {
   onConflict: "provider_id,fiscal_year",
-  ignoreDuplicates: true,   // ← DO NOTHING, not DO UPDATE
+  ignoreDuplicates: true, // ← DO NOTHING, not DO UPDATE
   count: "exact",
 });
 ```
@@ -150,9 +154,14 @@ The Supabase update call applies a DB-side guard as the authoritative filter:
 ```typescript
 await supabaseAdmin
   .from("providers")
-  .update({ annual_medicare_payments, payment_data_year, payment_data_source: "utilization_puf", charge_to_payment_ratio })
+  .update({
+    annual_medicare_payments,
+    payment_data_year,
+    payment_data_source: "utilization_puf",
+    charge_to_payment_ratio,
+  })
   .eq("id", provider_id)
-  .is("payment_data_source", null);   // ← primary guard; DO NOT remove
+  .is("payment_data_source", null); // ← primary guard; DO NOT remove
 ```
 
 The `payment_data_source IS NULL` condition on the DB call is the primary correctness guard. The pre-filtering in `buildPufProviderUpdates()` is a secondary optimization to avoid issuing no-op updates.
@@ -180,6 +189,7 @@ Trigger: `npx tsx scripts/ingest-puf.ts` — annual manual run.
 All tests in `scripts/lib/__tests__/puf.test.ts`, covering pure functions only (no I/O):
 
 **`parseAmount()`**
+
 - `"*"` → `null`
 - `""` → `null`
 - `"abc"` → `null`
@@ -187,6 +197,7 @@ All tests in `scripts/lib/__tests__/puf.test.ts`, covering pure functions only (
 - `"797586"` → `797586`
 
 **`transformPufRows()`**
+
 - Skips rows where `SMRY_CTGRY !== 'PROVIDER'`
 - Skips rows with unknown CCN (not in lookup map)
 - Maps all fields correctly for a complete row
@@ -194,6 +205,7 @@ All tests in `scripts/lib/__tests__/puf.test.ts`, covering pure functions only (
 - Returns `null` for empty amounts
 
 **`buildPufProviderUpdates()`**
+
 - Returns update only when `payment_data_source` is null for that provider
 - Skips provider when `payment_data_source` is already set (e.g., `"hcris"`)
 - Picks highest fiscal year when multiple PUF rows exist for the same provider

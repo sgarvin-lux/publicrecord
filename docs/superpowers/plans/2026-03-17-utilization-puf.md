@@ -12,11 +12,11 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|---|---|---|
-| `scripts/lib/puf.ts` | Create | Types, `parseAmount`, `transformPufRows`, `buildPufProviderUpdates`, `fetchAndParsePufCsv`, `upsertPufPaymentHistory`, `updateProvidersFromPuf` |
-| `scripts/lib/__tests__/puf.test.ts` | Create | Unit tests for all pure functions |
-| `scripts/ingest-puf.ts` | Create | Orchestrator: fetch → resolve → transform → upsert → update → summary |
+| File                                | Action | Responsibility                                                                                                                                  |
+| ----------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/lib/puf.ts`                | Create | Types, `parseAmount`, `transformPufRows`, `buildPufProviderUpdates`, `fetchAndParsePufCsv`, `upsertPufPaymentHistory`, `updateProvidersFromPuf` |
+| `scripts/lib/__tests__/puf.test.ts` | Create | Unit tests for all pure functions                                                                                                               |
+| `scripts/ingest-puf.ts`             | Create | Orchestrator: fetch → resolve → transform → upsert → update → summary                                                                           |
 
 ---
 
@@ -25,10 +25,12 @@
 ### Task 1: Pure functions in `puf.ts` and their tests
 
 **Files:**
+
 - Create: `scripts/lib/puf.ts`
 - Create: `scripts/lib/__tests__/puf.test.ts`
 
 **Context:**
+
 - `resolveProviders` and `computeChargeToPaymentRatio` are already exported from `scripts/lib/hcris.ts` — import from there, do not reimplement.
 - The existing `hcris.ts` `upsertPaymentHistory` uses `DO UPDATE` (overwrites). This is intentionally different: PUF uses `ignoreDuplicates: true` (`DO NOTHING`). Do not model PUF functions on HCRIS equivalents.
 - `payment_history` table: columns `provider_id`, `fiscal_year`, `medicare_payments`, `total_charges`, `total_days`, `total_patients`, `data_source` (all nullable except `provider_id`/`fiscal_year`). Unique index on `(provider_id, fiscal_year)`.
@@ -74,10 +76,12 @@ const basePufRow: PufPaymentHistoryRow = {
 describe("parseAmount", () => {
   it("returns null for *", () => expect(parseAmount("*")).toBeNull());
   it("returns null for empty string", () => expect(parseAmount("")).toBeNull());
-  it("returns null for non-numeric", () => expect(parseAmount("abc")).toBeNull());
+  it("returns null for non-numeric", () =>
+    expect(parseAmount("abc")).toBeNull());
   it("parses large integer", () =>
     expect(parseAmount("25968510365")).toBe(25968510365));
-  it("parses regular integer", () => expect(parseAmount("797586")).toBe(797586));
+  it("parses regular integer", () =>
+    expect(parseAmount("797586")).toBe(797586));
 });
 
 describe("transformPufRows", () => {
@@ -160,8 +164,16 @@ describe("buildPufProviderUpdates", () => {
   });
 
   it("picks highest fiscal year for same provider across datasets", () => {
-    const older = { ...basePufRow, fiscal_year: 2022, medicare_payments: 500000 };
-    const newer = { ...basePufRow, fiscal_year: 2023, medicare_payments: 797586 };
+    const older = {
+      ...basePufRow,
+      fiscal_year: 2022,
+      medicare_payments: 500000,
+    };
+    const newer = {
+      ...basePufRow,
+      fiscal_year: 2023,
+      medicare_payments: 797586,
+    };
     const dataSources = new Map<string, string | null>([
       ["uuid-provider-1", null],
     ]);
@@ -353,10 +365,12 @@ git commit -m "feat: add puf.ts pure functions and tests (PUB-8)"
 ### Task 2: I/O functions in `puf.ts` and the ingest orchestrator
 
 **Files:**
+
 - Modify: `scripts/lib/puf.ts` (append I/O functions)
 - Create: `scripts/ingest-puf.ts`
 
 **Context:**
+
 - `resolveProviders(ccns: string[]): Promise<Map<string, string>>` is in `scripts/lib/hcris.ts`. It resolves CCNs to provider UUIDs in chunks of 1000. Pass deduplicated CCNs.
 - `supabaseAdmin` is imported from `scripts/lib/supabase-admin.ts`.
 - The PUF CSVs are plain text CSVs. Stream the response body through Node.js `readline` line by line (same pattern as `parseHcrisFile()` in `hcris.ts`). Split each line on `,`. First line is the header. Provider names do not appear in the numeric/code columns we use, so plain comma splitting is correct.
@@ -365,6 +379,7 @@ git commit -m "feat: add puf.ts pure functions and tests (PUB-8)"
 - The orchestrator queries each provider's current `payment_data_source` in chunks of 1000 to build the `currentDataSources` map passed to `buildPufProviderUpdates`.
 
 **PUF URLs (2023 data, update annually):**
+
 ```
 SNF:     https://data.cms.gov/sites/default/files/2025-08/b646c0b9-5fe0-475c-8820-007680020fdc/RY_2025_RY_25_PAC_PUF_SNF_2023_main_final_unformatted.csv
 HHA:     https://data.cms.gov/sites/default/files/2025-08/1d04af0f-9173-47b0-b5f8-26df7722247c/RY_2025_RY_25_PAC_PUF_HH_2023_main_final_unformatted.csv
@@ -584,7 +599,9 @@ export async function main() {
   ].filter(Boolean) as string[];
 
   const uniqueCcns = [...new Set(allCcns)];
-  console.log(`\nResolving ${uniqueCcns.length} unique CCNs to provider UUIDs...`);
+  console.log(
+    `\nResolving ${uniqueCcns.length} unique CCNs to provider UUIDs...`,
+  );
   const lookup = await resolveProviders(uniqueCcns);
   console.log(`  Matched ${lookup.size} providers`);
 
@@ -689,6 +706,7 @@ set -a && source .env.local && set +a && npx tsx scripts/ingest-puf.ts
 ```
 
 Expected output (approximate):
+
 ```
 Fetching SNF PUF...
   ~14500 total rows (including summaries)
