@@ -12,7 +12,7 @@ function buildPdfText(sffCcns: string[], candidateCcns: string[]): string {
     }
   }
   if (candidateCcns.length > 0) {
-    lines.push("Special Focus Facility Candidates");
+    lines.push("Table D: SFF Candidate List");
     for (const ccn of candidateCcns) {
       lines.push(`Provider Name                     ${ccn}    TX`);
     }
@@ -52,7 +52,7 @@ describe("parseSffText", () => {
   });
 
   it("deduplicates CCNs within the candidate section", () => {
-    const text = "Special Focus Facility Candidates\n234567 234567";
+    const text = "Table D: SFF Candidate List\n234567 234567";
     const { candidateCcns } = parseSffText(text);
     expect(candidateCcns).toHaveLength(1);
     expect(candidateCcns).toEqual(["234567"]);
@@ -72,7 +72,7 @@ describe("parseSffText", () => {
   });
 
   it("returns empty sffCcns when only candidate section is present", () => {
-    const text = "Special Focus Facility Candidates\n345678";
+    const text = "Table D: SFF Candidate List\n345678";
     const { sffCcns, candidateCcns } = parseSffText(text);
     expect(sffCcns).toHaveLength(0);
     expect(candidateCcns).toEqual(["345678"]);

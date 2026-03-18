@@ -10,10 +10,16 @@ const CCN_REGEX = /\b\d{6}\b/g;
 /**
  * Parses raw text extracted from the CMS SFF PDF into two deduplicated CCN sets.
  *
- * Section detection checks the more-specific "Candidates" header first to avoid
- * misclassifying it as the SFF section. CCN extraction uses /\b\d{6}\b/ — nursing
- * home CCNs are always 6 digits. False positives from other 6-digit numbers
- * (zip codes, enrollment counts) are an accepted risk for this quarterly manual script.
+ * Section detection uses the real CMS PDF headers:
+ *   - SFF section:       "Special Focus Facilit"  (matches "Special Focus Facility (SFF) Program")
+ *   - Candidate section: "Table D:"               (matches "Table D: SFF Candidate List" per-page header)
+ *
+ * "Table D:" is checked first to avoid misclassifying it as the SFF section.
+ * The preamble uses "Table D –" (em dash) for the candidate description, which does NOT
+ * match "Table D:" so preamble text is safely ignored.
+ *
+ * CCN extraction uses /\b\d{6}\b/ — nursing home CCNs are always 6 digits.
+ * False positives from other 6-digit numbers are an accepted risk for this quarterly script.
  *
  * If a CCN appears in both sections (malformed PDF), it is treated as SFF only.
  */
@@ -23,7 +29,7 @@ export function parseSffText(text: string): SffParseResult {
   let currentSection: "sff" | "candidate" | null = null;
 
   for (const line of text.split("\n")) {
-    if (line.includes("Special Focus Facility Candidates")) {
+    if (line.includes("Table D:")) {
       currentSection = "candidate";
     } else if (line.includes("Special Focus Facilit")) {
       currentSection = "sff";
