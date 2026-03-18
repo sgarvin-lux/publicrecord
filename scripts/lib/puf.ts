@@ -129,6 +129,11 @@ export function buildPufProviderUpdates(
  * Fetch a PUF CSV from a URL and parse it into row objects.
  * Streams the response body through readline line by line.
  * Returns all rows — caller filters by SMRY_CTGRY.
+ *
+ * Uses naive comma splitting (no RFC 4180 quoting support). This is correct
+ * for CMS PUF files: the fields we read (PRVDR_ID, YEAR, TOT_MDCR_PYMT_AMT,
+ * TOT_CHRG_AMT, TOT_SRVC_DAYS, BENE_DSTNCT_CNT) are all numeric or coded
+ * values that never contain commas.
  */
 export async function fetchAndParsePufCsv(
   url: string,
