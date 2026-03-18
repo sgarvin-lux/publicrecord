@@ -136,8 +136,7 @@ export async function main(): Promise<void> {
   for (const [, group] of groups) {
     if (group.providerIds.size < 2) continue;
 
-    const sorted = [...group.rawNames].sort();
-    const operatorName = sorted[sorted.length - 1];
+    const operatorName = [...group.rawNames].sort()[0];
     const providerIdList = [...group.providerIds];
 
     const { data: opData, error: opErr } = await supabaseAdmin
